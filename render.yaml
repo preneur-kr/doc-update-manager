@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: doc-update-manager
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_CREDENTIALS_PATH
+        sync: false
+      - key: GOOGLE_DOC_LOG_SHEET_NAME
+        value: doc_update_logs
+      - key: SLACK_WEBHOOK_URL
+        sync: false
+      - key: SLACK_DOCUPDATE_WEBHOOK_URL
+        sync: false
+      - key: SLACK_SIGNING_SECRET
+        sync: false 
