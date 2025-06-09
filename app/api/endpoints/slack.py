@@ -79,4 +79,11 @@ async def test_slack_event():
     }
     
     # Slack 서비스를 통해 이벤트 처리
-    return await SlackService.handle_event(test_event) 
+    return await SlackService.handle_event(test_event)
+
+@router.options("/events")
+async def handle_slack_events_options():
+    """
+    Slack 이벤트 OPTIONS 요청을 처리합니다.
+    """
+    return {"status": "ok"} 

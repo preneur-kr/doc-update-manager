@@ -13,10 +13,11 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*", "https://api.slack.com"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*", "X-Slack-Request-Timestamp", "X-Slack-Signature", "Content-Type"],
+    expose_headers=["*"]
 )
 
 # 라우터 등록
