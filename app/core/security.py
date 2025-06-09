@@ -21,10 +21,11 @@ def verify_slack_request(request_body: bytes, timestamp: str, signature: str) ->
     sig_basestring = f"v0:{timestamp}:{request_body.decode('utf-8')}"
     
     # 서명 생성
-    my_signature = f"v0={hmac.new(
+    hashed_signature = hmac.new(
         settings.SLACK_SIGNING_SECRET.encode('utf-8'),
         sig_basestring.encode('utf-8'),
         hashlib.sha256
-    ).hexdigest()}"
+    ).hexdigest()
+    my_signature = f"v0={hashed_signature}"
     
     return hmac.compare_digest(my_signature, signature) 
