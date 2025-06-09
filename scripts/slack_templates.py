@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from scripts.sheet_logger import GOOGLE_DOC_LOG_SHEET_NAME
 
 # Load environment variables
 load_dotenv()
@@ -151,8 +152,8 @@ def build_doc_update_alert(
     Returns:
         Dict[str, Any]: Block Kit 메시지 payload
     """
-    # 변경 상세 정보를 외부 문서에 저장하고 URL 생성 (실제 구현 필요)
-    change_doc_url = "https://docs.google.com/document/d/DUMMY_DOC_ID/edit"
+    # 변경 상세 정보를 doc_update_logs 시트의 URL로 변경
+    change_doc_url = get_sheet_url(GOOGLE_DOC_LOG_SHEET_NAME)
     
     blocks = [
         {
@@ -203,7 +204,7 @@ def build_doc_update_alert(
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*📝 상세 변경 내용:*\n<{change_doc_url}|Google Docs에서 보기>"
+                "text": f"*📝 상세 변경 내용:*\n<{change_doc_url}|Google Sheets에서 보기>"
             }
         },
         {
@@ -217,7 +218,7 @@ def build_doc_update_alert(
                         "emoji": True
                     },
                     "style": "primary",
-                    "value": "approve",
+                    "value": file_path,
                     "action_id": "approve_changes"
                 },
                 {
@@ -228,7 +229,7 @@ def build_doc_update_alert(
                         "emoji": True
                     },
                     "style": "danger",
-                    "value": "request_revision",
+                    "value": file_path,
                     "action_id": "request_revision"
                 }
             ]

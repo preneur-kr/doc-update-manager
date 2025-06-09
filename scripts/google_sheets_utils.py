@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Optional
 import gspread
 from google.oauth2.service_account import Credentials
@@ -7,7 +8,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Get credentials path from environment
+# Get credentials path from environment (이제는 JSON 내용이 들어있음)
 GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH")
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 
@@ -20,22 +21,25 @@ def get_google_sheets_client() -> Optional[gspread.Client]:
     """
     try:
         if not GOOGLE_CREDENTIALS_PATH:
-            raise ValueError("GOOGLE_CREDENTIALS_PATH environment variable is not set")
+            raise ValueError("GOOGLE_CREDENTIALS_PATH environment variable (JSON content) is not set")
             
         if not GOOGLE_SHEET_ID:
             raise ValueError("GOOGLE_SHEET_ID environment variable is not set")
             
         print("\n=== Google Sheets 클라이언트 초기화 ===")
-        print(f"Credentials 경로: {GOOGLE_CREDENTIALS_PATH}")
+        # print(f"Credentials 경로: {GOOGLE_CREDENTIALS_PATH}") # 더 이상 경로가 아님
         
-        # Google Sheets API 인증
+        # Google Sheets API 인증 (JSON 내용에서 직접 로드)
         scopes = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/drive'
         ]
         
-        credentials = Credentials.from_service_account_file(
-            GOOGLE_CREDENTIALS_PATH,
+        # 환경 변수에서 JSON 문자열을 파싱
+        credentials_info = json.loads(GOOGLE_CREDENTIALS_PATH)
+        
+        credentials = Credentials.from_service_account_info(
+            credentials_info, # 파일 경로 대신 파싱된 JSON 정보 사용
             scopes=scopes
         )
         
@@ -47,6 +51,9 @@ def get_google_sheets_client() -> Optional[gspread.Client]:
         print("✅ 클라이언트 초기화 성공")
         return client
         
+    except json.JSONDecodeError as e:
+        print(f"❌ GOOGLE_CREDENTIALS_PATH 환경 변수 파싱 오류: 유효한 JSON 형식이 아닙니다. {str(e)}")
+        return None
     except Exception as e:
         print(f"\n❌ Google Sheets 클라이언트 초기화 실패")
         print(f"에러 유형: {type(e)}")
