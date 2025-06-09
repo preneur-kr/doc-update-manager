@@ -13,11 +13,15 @@ async def handle_slack_events(request: Request):
     Slack 이벤트를 처리합니다.
     """
     try:
+        print("DEBUG: Received Slack event request")
         # 요청 헤더 검증
         timestamp = request.headers.get("X-Slack-Request-Timestamp")
         signature = request.headers.get("X-Slack-Signature")
         
+        print(f"DEBUG: Headers - timestamp: {timestamp}, signature: {signature}")
+        
         if not timestamp or not signature:
+            print("DEBUG: Missing required Slack headers")
             raise HTTPException(
                 status_code=400,
                 detail="Missing required Slack headers"
@@ -25,9 +29,11 @@ async def handle_slack_events(request: Request):
             
         # 요청 본문 읽기
         body = await request.body()
+        print(f"DEBUG: Request body: {body.decode()}")
         
         # 요청 검증
         if not verify_slack_request(body, timestamp, signature):
+            print("DEBUG: Invalid Slack request signature")
             raise HTTPException(
                 status_code=401,
                 detail="Invalid Slack request signature"
@@ -35,6 +41,7 @@ async def handle_slack_events(request: Request):
             
         # 이벤트 데이터 파싱
         event_data = json.loads(body)
+        print(f"DEBUG: Parsed event data: {event_data}")
         
         # Slack 서비스를 통해 이벤트 처리
         return await SlackService.handle_event(event_data)
@@ -42,6 +49,7 @@ async def handle_slack_events(request: Request):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"DEBUG: Error processing Slack event: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process Slack event: {str(e)}"
