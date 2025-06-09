@@ -24,6 +24,11 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings():
-    return Settings()
+    _settings = Settings()
+    print(f"DEBUG: SLACK_SIGNING_SECRET loaded: {bool(_settings.SLACK_SIGNING_SECRET)}")
+    print(f"DEBUG: SLACK_BOT_TOKEN loaded: {bool(_settings.SLACK_BOT_TOKEN)}")
+    print(f"DEBUG: GOOGLE_SHEET_ID loaded: {bool(_settings.GOOGLE_SHEET_ID)}")
+    print(f"DEBUG: GOOGLE_CREDENTIALS_PATH loaded: {bool(_settings.GOOGLE_CREDENTIALS_PATH)}")
+    return _settings
 
 settings = get_settings() 
