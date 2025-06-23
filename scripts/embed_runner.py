@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_pinecone import Pinecone
 from pinecone import Pinecone as PineconeClient
 
 # ✅ 환경 변수 로드
