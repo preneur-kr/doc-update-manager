@@ -47,10 +47,16 @@ async def health_check():
         # 필수 환경 변수 검증
         required_vars = {
             "GOOGLE_SHEET_ID": settings.GOOGLE_SHEET_ID,
-            "GOOGLE_CREDENTIALS_PATH": settings.GOOGLE_CREDENTIALS_PATH,
             "SLACK_BOT_TOKEN": settings.SLACK_BOT_TOKEN,
             "SLACK_SIGNING_SECRET": settings.SLACK_SIGNING_SECRET
         }
+        
+        # Google Credentials 검증 (둘 중 하나만 있으면 됨)
+        if not settings.GOOGLE_CREDENTIALS_PATH and not settings.GOOGLE_CREDENTIALS_JSON:
+            raise HTTPException(
+                status_code=500,
+                detail="Missing Google credentials. Set either GOOGLE_CREDENTIALS_PATH or GOOGLE_CREDENTIALS_JSON."
+            )
         
         missing_vars = [var for var, value in required_vars.items() if not value]
         if missing_vars:
@@ -65,7 +71,8 @@ async def health_check():
             "config": {
                 "google_sheet_id": settings.GOOGLE_SHEET_ID[:8] + "..." if settings.GOOGLE_SHEET_ID else None,
                 "slack_bot_token_configured": bool(settings.SLACK_BOT_TOKEN),
-                "slack_signing_secret_configured": bool(settings.SLACK_SIGNING_SECRET)
+                "slack_signing_secret_configured": bool(settings.SLACK_SIGNING_SECRET),
+                "google_credentials_configured": True
             }
         }
     except Exception as e:
