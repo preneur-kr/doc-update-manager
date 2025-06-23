@@ -11,6 +11,10 @@ app = FastAPI(
 )
 
 # CORS 설정
+# 🚨 배포 시 주의사항:
+# - ngrok을 사용하는 경우: allow_origins=["*", "https://api.slack.com"]
+# - Render 배포 시: allow_origins=["https://api.slack.com"]로 변경 권장
+# - Slack Request URL을 Render 주소로 업데이트 필요
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*", "https://api.slack.com"],
@@ -32,6 +36,11 @@ async def root():
         "version": "1.0.0"
     }
 
+@app.get("/ping")
+async def ping():
+    """Simple health check endpoint for load balancers"""
+    return {"status": "pong", "timestamp": datetime.now().isoformat()}
+
 @app.get("/health")
 async def health_check():
     try:
@@ -39,8 +48,8 @@ async def health_check():
         required_vars = {
             "GOOGLE_SHEET_ID": settings.GOOGLE_SHEET_ID,
             "GOOGLE_CREDENTIALS_PATH": settings.GOOGLE_CREDENTIALS_PATH,
-            "SLACK_WEBHOOK_URL": settings.SLACK_WEBHOOK_URL,
-            "SLACK_DOCUPDATE_WEBHOOK_URL": settings.SLACK_DOCUPDATE_WEBHOOK_URL
+            "SLACK_BOT_TOKEN": settings.SLACK_BOT_TOKEN,
+            "SLACK_SIGNING_SECRET": settings.SLACK_SIGNING_SECRET
         }
         
         missing_vars = [var for var, value in required_vars.items() if not value]
@@ -55,8 +64,8 @@ async def health_check():
             "timestamp": datetime.now().isoformat(),
             "config": {
                 "google_sheet_id": settings.GOOGLE_SHEET_ID[:8] + "..." if settings.GOOGLE_SHEET_ID else None,
-                "slack_webhook_configured": bool(settings.SLACK_WEBHOOK_URL),
-                "slack_docupdate_webhook_configured": bool(settings.SLACK_DOCUPDATE_WEBHOOK_URL)
+                "slack_bot_token_configured": bool(settings.SLACK_BOT_TOKEN),
+                "slack_signing_secret_configured": bool(settings.SLACK_SIGNING_SECRET)
             }
         }
     except Exception as e:

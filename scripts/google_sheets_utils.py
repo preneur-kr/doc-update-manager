@@ -1,106 +1,84 @@
 import os
 import json
 from typing import Optional
-import gspread
 from google.oauth2.service_account import Credentials
+from google.auth.exceptions import DefaultCredentialsError
+import gspread
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Get credentials path from environment (이제는 JSON 내용이 들어있음)
-GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH")
-GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
-
-def get_google_sheets_client() -> Optional[gspread.Client]:
+def get_google_credentials() -> Optional[Credentials]:
     """
-    Google Sheets API 클라이언트를 초기화하고 반환합니다.
-    
-    Returns:
-        Optional[gspread.Client]: 초기화된 Google Sheets 클라이언트
+    Google Service Account credentials를 가져옵니다.
+    환경 변수 GOOGLE_CREDENTIALS_JSON이 있으면 그것을 사용하고,
+    없으면 GOOGLE_CREDENTIALS_PATH 파일을 읽습니다.
     """
     try:
-        if not GOOGLE_CREDENTIALS_PATH:
-            raise ValueError("GOOGLE_CREDENTIALS_PATH environment variable (JSON content) is not set")
-            
-        if not GOOGLE_SHEET_ID:
-            raise ValueError("GOOGLE_SHEET_ID environment variable is not set")
-            
-        print("\n=== Google Sheets 클라이언트 초기화 ===")
-        # print(f"Credentials 경로: {GOOGLE_CREDENTIALS_PATH}") # 더 이상 경로가 아님
+        # 1. 환경 변수에서 JSON 문자열로 credentials 가져오기 (Render 배포용)
+        credentials_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+        if credentials_json:
+            print("✅ Google credentials를 환경 변수에서 로드")
+            credentials_info = json.loads(credentials_json)
+            return Credentials.from_service_account_info(credentials_info)
         
-        # Google Sheets API 인증 (JSON 내용에서 직접 로드)
-        scopes = [
-            'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive'
-        ]
+        # 2. 파일 경로에서 credentials 가져오기 (로컬 개발용)
+        credentials_path = os.getenv("GOOGLE_CREDENTIALS_PATH")
+        if credentials_path and os.path.exists(credentials_path):
+            print(f"✅ Google credentials를 파일에서 로드: {credentials_path}")
+            return Credentials.from_service_account_file(credentials_path)
         
-        # 환경 변수에서 JSON 문자열을 파싱
-        credentials_info = json.loads(GOOGLE_CREDENTIALS_PATH)
-        
-        credentials = Credentials.from_service_account_info(
-            credentials_info, # 파일 경로 대신 파싱된 JSON 정보 사용
-            scopes=scopes
-        )
-        
-        # 서비스 계정 이메일 출력
-        print(f"서비스 계정 이메일: {credentials.service_account_email}")
-        
-        # Google Sheets 클라이언트 초기화
-        client = gspread.authorize(credentials)
-        print("✅ 클라이언트 초기화 성공")
-        return client
+        print("❌ Google credentials를 찾을 수 없습니다.")
+        print("환경 변수 GOOGLE_CREDENTIALS_JSON 또는 GOOGLE_CREDENTIALS_PATH를 설정해주세요.")
+        return None
         
     except json.JSONDecodeError as e:
-        print(f"❌ GOOGLE_CREDENTIALS_PATH 환경 변수 파싱 오류: 유효한 JSON 형식이 아닙니다. {str(e)}")
+        print(f"❌ Google credentials JSON 파싱 오류: {e}")
         return None
     except Exception as e:
-        print(f"\n❌ Google Sheets 클라이언트 초기화 실패")
-        print(f"에러 유형: {type(e)}")
-        print(f"에러 메시지: {str(e)}")
-        if "insufficient permission" in str(e).lower():
-            print("\n⚠️ 권한 문제가 감지되었습니다.")
-            print("1. Google Sheets 문서에 서비스 계정 이메일을 편집자로 추가했는지 확인")
-            print("2. 권한 변경 후 몇 분 정도 기다려주세요")
-            print("3. 여전히 문제가 있다면 문서를 다시 공유해보세요")
+        print(f"❌ Google credentials 로드 오류: {e}")
         return None
 
-def get_worksheet(sheet_name: str) -> Optional[gspread.Worksheet]:
+def get_worksheet(sheet_name: str):
     """
-    지정된 이름의 워크시트를 가져옵니다.
+    Google Sheets 워크시트를 가져옵니다.
     
     Args:
-        sheet_name (str): 워크시트 이름
+        sheet_name (str): 시트 이름
         
     Returns:
-        Optional[gspread.Worksheet]: 워크시트 객체
+        gspread.Worksheet: 워크시트 객체 또는 None
     """
     try:
-        print(f"\n=== 워크시트 가져오기 시도 ===")
-        print(f"시트 이름: {sheet_name}")
-        
-        client = get_google_sheets_client()
-        if not client:
-            print("❌ Google Sheets 클라이언트 초기화 실패")
+        # Google credentials 가져오기
+        credentials = get_google_credentials()
+        if not credentials:
             return None
-            
+        
+        # Google Sheets 클라이언트 생성
+        client = gspread.authorize(credentials)
+        
+        # 시트 ID 가져오기
+        sheet_id = os.getenv("GOOGLE_SHEET_ID")
+        if not sheet_id:
+            print("❌ GOOGLE_SHEET_ID 환경 변수가 설정되지 않았습니다.")
+            return None
+        
         # 스프레드시트 열기
-        print(f"스프레드시트 ID: {GOOGLE_SHEET_ID}")
-        spreadsheet = client.open_by_key(GOOGLE_SHEET_ID)
-        print(f"✅ 스프레드시트 열기 성공: {spreadsheet.title}")
+        spreadsheet = client.open_by_key(sheet_id)
         
         # 워크시트 가져오기 (없으면 생성)
         try:
             worksheet = spreadsheet.worksheet(sheet_name)
-            print(f"✅ 기존 워크시트 찾음: {worksheet.title}")
-        except gspread.exceptions.WorksheetNotFound:
-            print(f"⚠️ 워크시트를 찾을 수 없음. 새로 생성합니다: {sheet_name}")
+            print(f"✅ 워크시트 '{sheet_name}' 로드 성공")
+        except gspread.WorksheetNotFound:
+            print(f"⚠️ 워크시트 '{sheet_name}'이 없어서 생성합니다.")
             worksheet = spreadsheet.add_worksheet(title=sheet_name, rows=1000, cols=20)
-            print(f"✅ 새 워크시트 생성 완료: {worksheet.title}")
-            
+            print(f"✅ 워크시트 '{sheet_name}' 생성 완료")
+        
         return worksheet
         
     except Exception as e:
-        print(f"❌ 워크시트 가져오기 실패: {str(e)}")
-        print(f"에러 유형: {type(e)}")
+        print(f"❌ Google Sheets 연결 오류: {e}")
         return None 

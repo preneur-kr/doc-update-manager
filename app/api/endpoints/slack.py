@@ -4,6 +4,7 @@ from app.services.slack_service import SlackService
 import json
 import os
 from datetime import datetime
+import urllib.parse
 
 router = APIRouter()
 
@@ -13,43 +14,74 @@ async def handle_slack_events(request: Request):
     Slack 이벤트를 처리합니다.
     """
     try:
-        print("DEBUG: Received Slack event request")
+        print("\n🟢 Slack event received")
+        print(f"🔍 Request URL: {request.url}")
+        print(f"🔍 Request method: {request.method}")
+        print(f"🔍 Headers: {dict(request.headers)}")
+        
+        # 요청 본문 읽기
+        body = await request.body()
+        content_type = request.headers.get("Content-Type", "")
+        print(f"🔍 Content-Type: {content_type}")
+        print(f"🔍 Raw body: {body.decode()}")
+        
         # 요청 헤더 검증
         timestamp = request.headers.get("X-Slack-Request-Timestamp")
         signature = request.headers.get("X-Slack-Signature")
         
-        print(f"DEBUG: Headers - timestamp: {timestamp}, signature: {signature}")
-        
         if not timestamp or not signature:
-            print("DEBUG: Missing required Slack headers")
+            print("❌ Missing required Slack headers")
             raise HTTPException(
                 status_code=400,
                 detail="Missing required Slack headers"
             )
             
-        # 요청 본문 읽기
-        body = await request.body()
-        print(f"DEBUG: Request body: {body.decode()}")
-        
-        # 요청 검증
-        if not verify_slack_request(body, timestamp, signature):
-            print("DEBUG: Invalid Slack request signature")
+        # 요청 본문 파싱
+        try:
+            if "application/x-www-form-urlencoded" in content_type:
+                print("📝 Processing form-urlencoded data")
+                form_data = await request.form()
+                print(f"📝 Form data: {dict(form_data)}")
+                
+                if "payload" in form_data:
+                    print("📝 Found payload in form data")
+                    event_data = json.loads(form_data["payload"])
+                else:
+                    print("📝 No payload found, using form data as is")
+                    event_data = dict(form_data)
+            else:
+                print("📝 Processing JSON data")
+                event_data = json.loads(body)
+            
+            print(f"📝 Parsed event data: {event_data}")
+            
+            # 요청 검증
+            if not verify_slack_request(body, timestamp, signature):
+                print("❌ Invalid Slack request signature")
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid Slack request signature"
+                )
+            
+            print("✅ Request validation successful")
+            
+            # Slack 서비스를 통해 이벤트 처리
+            result = await SlackService.handle_event(event_data)
+            print("✅ Event handled successfully")
+            return result
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON decode error: {e}")
+            print(f"❌ Problematic body: {body.decode()}")
             raise HTTPException(
-                status_code=401,
-                detail="Invalid Slack request signature"
+                status_code=400,
+                detail=f"Invalid JSON in request body: {e}"
             )
             
-        # 이벤트 데이터 파싱
-        event_data = json.loads(body)
-        print(f"DEBUG: Parsed event data: {event_data}")
-        
-        # Slack 서비스를 통해 이벤트 처리
-        return await SlackService.handle_event(event_data)
-        
     except HTTPException:
         raise
     except Exception as e:
-        print(f"DEBUG: Error processing Slack event: {str(e)}")
+        print(f"❌ Unexpected error: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process Slack event: {str(e)}"

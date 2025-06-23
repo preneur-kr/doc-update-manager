@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from scripts.filtered_vector_search import FilteredVectorSearch
-from scripts.answer_guard import is_fallback_response
-from scripts.slack_alert_manager import SlackAlertManager  # 새로운 SlackAlertManager import
+from scripts.answer_guard import is_fallback_response, is_fallback_like_response
+from scripts.slack_alert_manager import SlackAlertManager  # SlackAlertManager import 활성화
 from scripts.sheet_logger import log_to_sheet
 from scripts.fallback_logger import log_fallback_to_sheet
 
@@ -167,38 +167,49 @@ def process_query(question: str, category: Optional[str] = None, section: Option
         section=section
     )
     
-    # 2. 최종 표시할 응답 결정
+    # 2. fallback-like 응답 감지
+    is_fallback_like = is_fallback_like_response(original_answer)
+    
+    # 3. 최종 표시할 응답 결정
     displayed_answer = FALLBACK_MESSAGE if is_fallback else original_answer
     
-    # 3. 결과 출력
+    # 4. 결과 출력
     print("\n=== 응답 결과 ===")
     print(f"질문: {question}")
     print(f"답변: {displayed_answer}")
     print(f"Fallback 여부: {'예' if is_fallback else '아니오'}")
+    print(f"Fallback-like 여부: {'예' if is_fallback_like else '아니오'}")
     
-    # 4. 로깅 및 알림
+    # 5. 로깅 및 알림
     if is_fallback:
         print("\n=== Fallback 응답 로깅 시작 ===")
         print(f"Fallback 감지 이유: {'검색 결과 없음' if not search_results else 'GPT 응답이 fallback 키워드 포함'}")
-        
-        # 4.1 Slack 알림 (Block Kit 형식)
+
+        # 5.1 Slack 알림 전송 (SlackAlertManager 사용)
+        print("\n--- 📣 Slack 알림 전송 ---")
         top_result = search_results[0][0] if search_results else None
-        SlackAlertManager.send_fallback_alert(
+        slack_success = SlackAlertManager.send_fallback_alert(
             question=question,
             gpt_response=original_answer,
             displayed_answer=displayed_answer,
-            fallback_type="FALLBACK",
+            fallback_type="fallback",
             top_result=top_result
         )
         
-        # 4.2 Fallback 로깅
+        if slack_success:
+            print("✅ Slack 알림 전송 성공!")
+        else:
+            print("❌ Slack 알림 전송 실패")
+
+        # 5.2 Fallback 로깅
+        print("\n--- 📊 Fallback 시트 로깅 시작 ---")
         success = log_fallback_to_sheet(
             fallback_type="LOW_SIMILARITY",
             similarity_scores=[score for _, score in search_results] if search_results else [0.0],
             query=question,
             gpt_response=original_answer,
             displayed_answer=displayed_answer,
-            slack_sent=True,
+            slack_sent=slack_success,
             confirmed=False,
             needs_update=True,
             notes="자동 감지된 fallback 응답"
@@ -207,7 +218,45 @@ def process_query(question: str, category: Optional[str] = None, section: Option
             print("❌ Fallback 로깅 실패")
         return  # 여기서 함수를 종료하여 일반 로깅이 실행되지 않도록 함
     
-    # 4.3 일반 로깅 (fallback이 아닌 경우에만 실행)
+    # 5.3 Fallback-like 응답 처리
+    elif is_fallback_like:
+        print("\n=== Fallback-like 응답 로깅 시작 ===")
+        print(f"Fallback-like 감지 이유: GPT 응답이 fallback-like 키워드 포함")
+
+        # 5.4 Slack 알림 전송 (SlackAlertManager 사용)
+        print("\n--- 📣 Fallback-like Slack 알림 전송 ---")
+        top_result = search_results[0][0] if search_results else None
+        slack_success = SlackAlertManager.send_fallback_alert(
+            question=question,
+            gpt_response=original_answer,
+            displayed_answer=displayed_answer,
+            fallback_type="fallback-like",
+            top_result=top_result
+        )
+        
+        if slack_success:
+            print("✅ Fallback-like Slack 알림 전송 성공!")
+        else:
+            print("❌ Fallback-like Slack 알림 전송 실패")
+
+        # 5.5 Fallback-like 로깅
+        print("\n--- 📊 Fallback-like 시트 로깅 시작 ---")
+        success = log_fallback_to_sheet(
+            fallback_type="FALLBACK_LIKE",
+            similarity_scores=[score for _, score in search_results] if search_results else [0.0],
+            query=question,
+            gpt_response=original_answer,
+            displayed_answer=displayed_answer,
+            slack_sent=slack_success,
+            confirmed=False,
+            needs_update=True,
+            notes="자동 감지된 fallback-like 응답"
+        )
+        if not success:
+            print("❌ Fallback-like 로깅 실패")
+        return  # 여기서 함수를 종료하여 일반 로깅이 실행되지 않도록 함
+    
+    # 5.6 일반 로깅 (fallback이나 fallback-like가 아닌 경우에만 실행)
     print("\n=== 일반 응답 로깅 시작 ===")
     log_data = {
         "timestamp": timestamp,

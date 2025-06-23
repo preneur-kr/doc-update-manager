@@ -38,8 +38,8 @@ class SlackAlertManager:
                 timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             
-            # 메시지 전송
-            return send_block_message(payload)
+            # 메시지 전송 (전용 채널 지정)
+            return send_block_message(payload, channel="fallback-alerts")
             
         except Exception as e:
             print(f"❌ Fallback 알림 전송 중 오류 발생: {str(e)}")

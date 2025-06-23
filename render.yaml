@@ -1,19 +1,34 @@
 services:
   - type: web
-    name: doc-update-manager
+    name: hotel-bot-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    autoDeploy: true
     envVars:
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: SLACK_SIGNING_SECRET
+        sync: false
+      - key: SLACK_DEFAULT_CHANNEL
+        value: general
       - key: GOOGLE_SHEET_ID
         sync: false
-      - key: GOOGLE_CREDENTIALS_PATH
+      - key: GOOGLE_CREDENTIALS_JSON
         sync: false
       - key: GOOGLE_DOC_LOG_SHEET_NAME
         value: doc_update_logs
-      - key: SLACK_WEBHOOK_URL
+      - key: GOOGLE_CHAT_LOG_SHEET_NAME
+        value: chat_logs
+      - key: GOOGLE_FALLBACK_LOG_SHEET_NAME
+        value: fallback_logs
+      - key: OPENAI_API_KEY
         sync: false
-      - key: SLACK_DOCUPDATE_WEBHOOK_URL
+      - key: PINECONE_API_KEY
         sync: false
-      - key: SLACK_SIGNING_SECRET
-        sync: false 
+      - key: PINECONE_ENV
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        sync: false
+      - key: ENVIRONMENT
+        value: production 

@@ -198,54 +198,45 @@ def build_doc_update_alert(
         }
     })
 
-    # 상세 내용 보기 링크와 액션 버튼
-    blocks.extend([
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": f"*📝 상세 변경 내용:*\n<{change_doc_url}|Google Sheets에서 보기>"
-            }
-        },
-        {
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "✅ 변경 승인",
-                        "emoji": True
-                    },
-                    "style": "primary",
-                    "value": file_path,
-                    "action_id": "approve_changes"
-                },
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "🔄 수정 요청",
-                        "emoji": True
-                    },
-                    "style": "danger",
-                    "value": file_path,
-                    "action_id": "request_revision"
-                }
-            ]
-        },
-        {
-            "type": "context",
-            "elements": [
-                {
-                    "type": "mrkdwn",
-                    "text": "※ 최신 문서로 갱신됨 — 별도 조치 불필요"
-                }
-            ]
+    # 변경 상세 정보 링크
+    blocks.append({
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": f"*📋 변경 상세 정보:*\n<{change_doc_url}|Google Sheets에서 확인하기>"
         }
-    ])
+    })
+
+    # 승인/수정 요청 버튼 추가
+    blocks.append({
+        "type": "actions",
+        "elements": [
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "✅ 변경 승인",
+                    "emoji": True
+                },
+                "style": "primary",
+                "action_id": "approve_changes",
+                "value": file_path
+            },
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "🔄 수정 요청",
+                    "emoji": True
+                },
+                "style": "danger",
+                "action_id": "request_revision",
+                "value": file_path
+            }
+        ]
+    })
 
     return {
-        "text": "📄 문서 업데이트 알림",
+        "text": f"문서 변경이 감지되었습니다: {file_path}",
         "blocks": blocks
     } 
