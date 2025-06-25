@@ -11,4 +11,5 @@ langchain-community==0.0.10
 pinecone-client==2.2.4
 openai>=1.10.0,<2.0.0
 requests==2.31.0
-pydantic==2.5.0 
+pydantic==2.5.0
+python-multipart 
