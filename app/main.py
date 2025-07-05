@@ -1,9 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.endpoints import document, slack
+from app.api.endpoints import document, slack, chat
 from datetime import datetime
 
+# Hotel Bot API with Chat functionality
 app = FastAPI(
     title="Hotel Bot API",
     description="Hotel Bot API with Slack integration",
@@ -11,22 +12,25 @@ app = FastAPI(
 )
 
 # CORS 설정
-# 🚨 배포 시 주의사항:
-# - ngrok을 사용하는 경우: allow_origins=["*", "https://api.slack.com"]
-# - Render 배포 시: allow_origins=["https://api.slack.com"]로 변경 권장
-# - Slack Request URL을 Render 주소로 업데이트 필요
+# 개발 환경과 프로덕션 환경 모두 지원
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "https://api.slack.com"],
+    allow_origins=[
+        "http://localhost:5173",  # Vite 개발 서버
+        "http://localhost:3000",  # 일반적인 React 개발 서버
+        "https://api.slack.com",  # Slack API
+        "*"  # 기타 모든 출처 (개발 환경용)
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*", "X-Slack-Request-Timestamp", "X-Slack-Signature", "Content-Type"],
-    expose_headers=["*"]
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용
+    allow_headers=["*"],  # 모든 헤더 허용
+    expose_headers=["*"]  # 모든 헤더 노출
 )
 
 # 라우터 등록
 app.include_router(document.router, prefix="/api/v1", tags=["document"])
 app.include_router(slack.router, prefix="/api/v1/slack", tags=["slack"])
+app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 
 @app.get("/")
 async def root():
