@@ -76,7 +76,7 @@ def log_to_sheet(data: Dict[str, Any], sheet_name: str = None) -> bool:
                 str(data.get("is_fallback", False)),
                 data.get("search_results", "[]")
             ]
-            
+        
             print(f"🔍 DEBUG: 구성된 row 데이터:")
             for i, value in enumerate(row):
                 print(f"  [{i}] {type(value)}: {str(value)[:100]}...")

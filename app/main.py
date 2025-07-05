@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.endpoints import document, slack, chat
+from app.api.endpoints import document, slack
+from app.api.endpoints.chat import router as chat_router
 from datetime import datetime
 
 # Hotel Bot API with Chat functionality
@@ -30,7 +31,7 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(document.router, prefix="/api/v1", tags=["document"])
 app.include_router(slack.router, prefix="/api/v1/slack", tags=["slack"])
-app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
+app.include_router(chat_router, prefix="/api/v1", tags=["chat"])
 
 @app.get("/")
 async def root():
