@@ -14,8 +14,8 @@ class FilteredVectorSearch:
     def __init__(self):
         """초기화: Embedding 모델과 Pinecone 인덱스 설정"""
         self.embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-        self.pc = Pinecone(api_key=PINECONE_API_KEY)
-        self.index = self.pc.Index(PINECONE_INDEX_NAME)
+        pc = Pinecone(api_key=PINECONE_API_KEY)
+        self.index = pc.Index(PINECONE_INDEX_NAME)
     
     def similarity_search_with_metadata(
         self,

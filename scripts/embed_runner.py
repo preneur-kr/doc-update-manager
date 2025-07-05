@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from pinecone import Pinecone as PineconeClient
+from pinecone import Pinecone
 
 # ✅ 환경 변수 로드
 load_dotenv()
@@ -75,10 +75,10 @@ def run_embedding(doc_path: str = "docs/hotel_policy.txt"):
     embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
     # 4. Pinecone 초기화 및 인덱스 선택
-    pc = PineconeClient(api_key=PINECONE_API_KEY)
+    pc = Pinecone(api_key=PINECONE_API_KEY)
     index = pc.Index(PINECONE_INDEX_NAME)
     print(f"🧠 Pinecone 인덱스 선택됨: {PINECONE_INDEX_NAME}")
-    print(f"✅ 사용 가능한 인덱스 목록: {pc.list_indexes().names()}")
+    print(f"✅ 사용 가능한 인덱스 목록: {pc.list_indexes()}")
 
     # 5. 기존 벡터 삭제
     print("🧹 기존 벡터 삭제 중...")
