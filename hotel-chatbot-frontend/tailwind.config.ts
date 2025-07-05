@@ -5,6 +5,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -24,15 +25,23 @@ export default {
           900: '#10141a',
         },
         dark: {
-          900: '#18181b',
-          800: '#232329',
-          700: '#2a2a31',
-          600: '#31313a',
+          900: '#0f0f0f',
+          800: '#1a1a1a',
+          700: '#2a2a2a',
+          600: '#3a3a3a',
+          500: '#4a4a4a',
+          400: '#6a6a6a',
+          300: '#8a8a8a',
+          200: '#aaaaaa',
+          100: '#cccccc',
+          50: '#f5f5f5',
         },
       },
       boxShadow: {
         'xl-dark': '0 8px 32px 0 rgba(0,0,0,0.45)',
+        'dark': '0 4px 16px 0 rgba(0,0,0,0.3)',
       },
     },
   },
+  plugins: [],
 } satisfies Config 

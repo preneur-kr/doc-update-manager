@@ -1,6 +1,6 @@
-import type { ChatResponse } from '../types/chat';
+import type { ChatResponse, ChatMessage } from '../types/chat';
 
-// API 기본 URL - 로컬 백엔드 사용 (개발 환경)
+// API 기본 URL - 환경 변수 사용
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export interface ChatRequest {
@@ -8,6 +8,9 @@ export interface ChatRequest {
   category?: string;
   section?: string;
 }
+
+// 타입 명시적 re-export
+export type { ChatMessage, ChatResponse };
 
 /**
  * 챗봇 API와 통신하여 호텔 정책 질문에 대한 답변을 받습니다.
@@ -70,3 +73,6 @@ export const checkChatApiHealth = async (): Promise<boolean> => {
     return false;
   }
 };
+
+// 기존 코드와의 호환성을 위한 별칭 (deprecated)
+export const sendMessage = sendChatMessage;

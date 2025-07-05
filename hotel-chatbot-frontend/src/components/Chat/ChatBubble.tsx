@@ -1,15 +1,19 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ChatBubbleLeftIcon, UserIcon } from '@heroicons/react/24/outline';
 
 interface ChatBubbleProps {
   message: string;
   isUser: boolean;
   timestamp: Date;
-  isFirst?: boolean;
 }
 
-export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isUser, timestamp }) => {
+export const ChatBubble: React.FC<ChatBubbleProps> = ({ 
+  message, 
+  isUser, 
+  timestamp
+}) => {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { 
       hour: '2-digit', 
@@ -19,22 +23,22 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isUser, timesta
   };
 
   return (
-    <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} items-end gap-2`}>
-      {/* 아바타 */}
-      {!isUser ? (
-        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xl select-none">
-          <span role="img" aria-label="bot">🤖</span>
-        </div>
-      ) : (
-        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-base font-semibold text-white select-none">
-          U
+    <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} items-end gap-3 mb-4`}>
+      {/* 아바타 - 봇 메시지일 때만 표시 */}
+      {!isUser && (
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md flex-shrink-0">
+          <ChatBubbleLeftIcon className="w-5 h-5 text-white" />
         </div>
       )}
+      
       {/* 메시지 버블 */}
-      <div className={`relative max-w-[80%] md:max-w-md ${isUser ? 'order-2' : 'order-1'}`}>
+      <div className={`relative max-w-[85%] md:max-w-[70%] ${isUser ? 'order-first' : ''}`}>
         <div
-          className={`px-4 py-3 md:px-5 md:py-3 rounded-3xl shadow-md text-sm break-words
-            ${isUser ? 'bg-blue-600 text-white rounded-br-xl' : 'bg-gray-200 text-gray-900 rounded-bl-xl'}
+          className={`px-4 py-3 rounded-2xl shadow-sm text-[15px] leading-relaxed break-words relative
+            ${isUser 
+              ? 'bg-blue-600 text-white rounded-br-md ml-auto' 
+              : 'bg-white text-gray-800 rounded-bl-md border border-gray-100'
+            }
           `}
         >
           {/* 마크다운 렌더링 */}
@@ -45,31 +49,64 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isUser, timesta
                 // @ts-expect-error: react-markdown v8+ passes 'inline' in props
                 const isInline = props.inline;
                 return !isInline ? (
-                  <pre className="bg-gray-800 text-white rounded-lg p-3 my-2 overflow-x-auto text-xs"><code {...props}>{props.children}</code></pre>
+                  <pre className={`rounded-lg p-3 my-2 overflow-x-auto text-sm ${
+                    isUser 
+                      ? 'bg-blue-800 text-blue-100' 
+                      : 'bg-gray-900 text-gray-100'
+                  }`}>
+                    <code {...props}>{props.children}</code>
+                  </pre>
                 ) : (
-                  <code className="bg-gray-100 text-pink-600 rounded px-1 py-0.5 text-xs" {...props}>{props.children}</code>
+                  <code className={`rounded px-1.5 py-0.5 text-sm font-mono ${
+                    isUser 
+                      ? 'bg-blue-500 text-blue-100' 
+                      : 'bg-gray-100 text-pink-600'
+                  }`} {...props}>
+                    {props.children}
+                  </code>
                 );
               },
               a({href, children, ...props}) {
-                return <a href={href} className="text-blue-500 underline" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
-              },
-              li({children, ...props}) {
-                return <li className="ml-4 list-disc text-sm" {...props}>{children}</li>;
+                return (
+                  <a 
+                    href={href} 
+                    className={`underline hover:no-underline transition-colors duration-300 ${
+                      isUser 
+                        ? 'text-blue-200 hover:text-white' 
+                        : 'text-blue-600 hover:text-blue-800'
+                    }`}
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    {...props}
+                  >
+                    {children}
+                  </a>
+                );
               },
               strong({children, ...props}) {
                 return <strong className="font-semibold" {...props}>{children}</strong>;
-              },
-              em({children, ...props}) {
-                return <em className="italic" {...props}>{children}</em>;
-              },
+              }
             }}
           >
             {message}
           </ReactMarkdown>
-          {/* 타임스탬프 */}
-          <span className="block text-xs text-gray-400 text-right mt-1 select-none">{formatTime(timestamp)}</span>
+        </div>
+        
+        {/* 타임스탬프 */}
+        <div className={`flex items-center mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
+          <span className="text-xs text-gray-400 select-none">
+            {formatTime(timestamp)}
+          </span>
         </div>
       </div>
+      
+      {/* 사용자 아바타 */}
+      {isUser && (
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center shadow-md flex-shrink-0">
+          <UserIcon className="w-5 h-5 text-white" />
+        </div>
+      )}
     </div>
   );
 };
+

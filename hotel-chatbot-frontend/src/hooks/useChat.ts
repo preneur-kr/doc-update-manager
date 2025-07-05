@@ -1,5 +1,6 @@
 import { useReducer, useCallback } from 'react';
-import { sendMessage, ChatMessage } from '../api/chatApi';
+import { sendChatMessage } from '../api/chatApi';
+import type { ChatMessage } from '../api/chatApi';
 
 interface ChatState {
   messages: ChatMessage[];
@@ -52,7 +53,7 @@ export const useChat = () => {
     dispatch({ type: 'CLEAR_ERROR' });
 
     try {
-      const response = await sendMessage(content);
+      const response = await sendChatMessage({ message: content });
       
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: hotel-chatbot-frontend
+    env: static
+    staticPublishPath: ./dist
+    buildCommand: npm ci && npm run build
+    headers:
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html 
