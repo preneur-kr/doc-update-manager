@@ -31,4 +31,38 @@ services:
       - key: PINECONE_INDEX_NAME
         sync: false
       - key: ENVIRONMENT
+        value: production
+
+  - type: cron
+    name: hotel-doc-auto-updater
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: PYTHONPATH=. python scripts/cron_ingest_update.py
+    schedule: "*/10 * * * *"  # 10분마다 실행
+    envVars:
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: SLACK_SIGNING_SECRET
+        sync: false
+      - key: SLACK_DEFAULT_CHANNEL
+        value: general
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: GOOGLE_DOC_LOG_SHEET_NAME
+        value: doc_update_logs
+      - key: GOOGLE_CHAT_LOG_SHEET_NAME
+        value: chat_logs
+      - key: GOOGLE_FALLBACK_LOG_SHEET_NAME
+        value: fallback_logs
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_ENV
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        sync: false
+      - key: ENVIRONMENT
         value: production 
