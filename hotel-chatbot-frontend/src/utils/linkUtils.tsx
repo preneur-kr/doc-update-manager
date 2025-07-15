@@ -1,5 +1,6 @@
 import React from 'react';
 import { debugLog, registerDebugFunctions, onlyInDev } from './debugUtils';
+import { CONFIG } from '../config/env';
 
 interface LinkifyOptions {
   isUserMessage?: boolean;
@@ -55,7 +56,7 @@ export const linkifyText = (
     while ((match = urlRegex.exec(line)) !== null) {
       matchCount++;
 
-      if (matchCount > 10) {
+      if (matchCount > CONFIG.UI.LINK_MAX_COUNT_PER_LINE) {
         debugLog.warn('🚨 linkifyText: 무한루프 방지');
         break;
       }

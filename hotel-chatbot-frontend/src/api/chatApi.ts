@@ -1,10 +1,9 @@
 import type { ChatResponse, ChatMessage } from '../types/chat';
 import { debugLog, registerDebugFunctions, onlyInDev } from '../utils/debugUtils';
+import { CONFIG } from '../config/env';
 
-// API 기본 URL - 환경 변수 사용
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  'https://doc-update-manager.onrender.com';
+// 🔧 환경설정에서 API 설정 가져오기
+const { BASE_URL: API_BASE_URL } = CONFIG.API;
 
 // 🔒 보안: 개발 환경에서만 디버깅 로그
 debugLog.log('🌐 API_BASE_URL:', API_BASE_URL);
@@ -109,7 +108,7 @@ export const sendChatMessage = async (
  * Render의 cold start를 고려하여 충분한 타임아웃 설정
  */
 export const checkChatApiReady = async (
-  timeout: number = 5000
+  timeout: number = CONFIG.API.TIMEOUT_QUICK
 ): Promise<{ ready: boolean; status: string }> => {
   const healthUrl = `${API_BASE_URL}/health`;
   const startTime = performance.now();
@@ -177,7 +176,7 @@ export const checkChatApiReady = async (
  * Render 서버의 지연을 고려한 충분한 타임아웃 설정
  */
 export const checkChatApiHealth = async (
-  timeout: number = 8000
+  timeout: number = CONFIG.API.TIMEOUT_HEALTH
 ): Promise<boolean> => {
   const healthUrl = `${API_BASE_URL}/health`;
   const startTime = performance.now();

@@ -11,6 +11,8 @@ import {
 import { useChatHistory } from './hooks/useChatHistory';
 import { useToast } from './hooks/useToast';
 import { ToastContainer } from './components/UI/Toast';
+import { CONFIG } from './config/env';
+import { debugLog } from './utils/debugUtils';
 
 import './styles/globals.css';
 
@@ -31,36 +33,40 @@ function App() {
 
     const checkApiWithRetry = async () => {
       try {
-        console.log('🔄 API 연결 상태 체크 시작');
+        debugLog.log('🔄 API 연결 상태 체크 시작');
         // 헬스 체크로 연결 상태 확인 (Render cold start 고려한 타임아웃)
-        const readyCheck = await checkChatApiReady(5000);
-        console.log('🔄 첫 번째 체크 결과:', readyCheck);
+        const readyCheck = await checkChatApiReady(CONFIG.API.TIMEOUT_QUICK);
+        debugLog.log('🔄 첫 번째 체크 결과:', readyCheck);
 
         if (mounted) {
           if (readyCheck.ready) {
-            console.log('✅ 연결 성공!');
+            debugLog.log('✅ 연결 성공!');
             setApiStatus('connected');
           } else {
-            console.log('⚠️ 첫 번째 체크 실패, 재시도 중...');
-            // 실패 시 재시도 (지수 백오프, 4회 시도, 8초 타임아웃)
-            const isHealthy = await checkChatApiHealthWithRetry(4, 1000, 8000);
-            console.log('🔄 재시도 결과:', isHealthy);
+            debugLog.log('⚠️ 첫 번째 체크 실패, 재시도 중...');
+            // 실패 시 재시도 (지수 백오프, 설정된 재시도 횟수 및 타임아웃)
+            const isHealthy = await checkChatApiHealthWithRetry(
+              CONFIG.API.RETRY_COUNT,
+              CONFIG.API.RETRY_DELAY,
+              CONFIG.API.TIMEOUT_HEALTH
+            );
+            debugLog.log('🔄 재시도 결과:', isHealthy);
             setApiStatus(isHealthy ? 'connected' : 'disconnected');
           }
         }
 
-        // 연결 성공 시 주기적 체크 시작 (30초마다)
+        // 연결 성공 시 주기적 체크 시작 (설정된 간격으로)
         if (mounted && readyCheck.ready && !healthCheckInterval) {
           healthCheckInterval = window.setInterval(async () => {
             if (mounted) {
-              console.log('🔄 주기적 연결 상태 체크');
-              const quickCheck = await checkChatApiReady(6000);
-              console.log('🔄 주기적 체크 결과:', quickCheck);
+              debugLog.log('🔄 주기적 연결 상태 체크');
+              const quickCheck = await checkChatApiReady(CONFIG.API.TIMEOUT_EXTENDED);
+              debugLog.log('🔄 주기적 체크 결과:', quickCheck);
               if (mounted) {
                 setApiStatus(quickCheck.ready ? 'connected' : 'disconnected');
               }
             }
-          }, 30000);
+          }, CONFIG.API.HEALTH_CHECK_INTERVAL);
         }
       } catch {
         if (mounted) {
@@ -142,9 +148,13 @@ function App() {
       // 연결 오류 시 상태 재확인
       setApiStatus('checking');
       setTimeout(async () => {
-        const isHealthy = await checkChatApiHealthWithRetry(3, 1500, 8000);
+        const isHealthy = await checkChatApiHealthWithRetry(
+          CONFIG.API.RETRY_COUNT - 1, // 오류 시에는 재시도 횟수를 줄임
+          CONFIG.API.RETRY_DELAY_EXTENDED,
+          CONFIG.API.TIMEOUT_HEALTH
+        );
         setApiStatus(isHealthy ? 'connected' : 'disconnected');
-      }, 1000);
+      }, CONFIG.API.RECONNECT_DELAY);
     } finally {
       setIsLoading(false);
     }
@@ -177,10 +187,10 @@ function App() {
             </div>
             <div className='flex flex-col'>
               <div className='text-lg font-bold text-black leading-tight'>
-                서정적인 호텔
+                {CONFIG.HOTEL.NAME}
               </div>
               <div className='text-sm text-gray-500 leading-tight'>
-                AI가 바로 답변해 드려요
+                {CONFIG.HOTEL.SUBTITLE}
               </div>
             </div>
           </div>

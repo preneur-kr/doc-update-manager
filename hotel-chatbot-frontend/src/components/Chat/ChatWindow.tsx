@@ -3,6 +3,7 @@ import { MessageList } from './MessageList';
 import { InputBox } from './InputBox';
 import { QuickReplies } from './QuickReplies';
 import type { ChatMessage } from '../../types/chat';
+import { CONFIG } from '../../config/env';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
@@ -30,7 +31,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
-      const isAtBottom = scrollHeight - scrollTop - clientHeight < 20; // 20px 여유
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < CONFIG.UI.AUTO_SCROLL_THRESHOLD;
       setIsUserScrolling(!isAtBottom);
     };
 
@@ -47,13 +48,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       // 약간의 지연을 두어 DOM 업데이트 후 스크롤
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      }, CONFIG.UI.SCROLL_BEHAVIOR_DELAY);
     }
   }, [messages, isUserScrolling, lastMessageCount]);
 
-  // 메시지가 3개 이상이면 빠른 답변 숨기기
+  // 메시지가 설정된 개수 이상이면 빠른 답변 숨기기
   useEffect(() => {
-    setShowQuickReplies(messages.length <= 2);
+    setShowQuickReplies(messages.length <= CONFIG.UI.QUICK_REPLIES_THRESHOLD);
   }, [messages.length]);
 
   const handleQuickReply = (message: string) => {

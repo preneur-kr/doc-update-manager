@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { CONFIG } from '../config/env';
 
 interface UseStreamingTextOptions {
   text: string;
@@ -9,8 +10,8 @@ interface UseStreamingTextOptions {
 
 export const useStreamingText = ({
   text,
-  speed = 30,
-  startDelay = 300,
+  speed = CONFIG.UI.STREAMING_TEXT_SPEED,
+  startDelay = CONFIG.UI.STREAMING_TEXT_START_DELAY,
   onComplete,
 }: UseStreamingTextOptions) => {
   const [displayText, setDisplayText] = useState('');

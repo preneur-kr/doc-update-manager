@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { ToastType } from '../components/UI/Toast';
+import { CONFIG } from '../config/env';
 
 interface ToastItem {
   id: string;
@@ -21,12 +22,12 @@ export const useToast = () => {
         type,
         title,
         message,
-        duration: duration || 4000,
+        duration: duration || CONFIG.UI.TOAST_DEFAULT_DURATION,
       };
 
       setToasts(prev => {
-        // 모바일에서는 최대 3개까지만 표시
-        const maxToasts = 3;
+        // 설정된 최대 토스트 개수만 표시
+        const maxToasts = CONFIG.UI.TOAST_MAX_COUNT;
         const newToasts = [newToast, ...prev];
         return newToasts.slice(0, maxToasts);
       });

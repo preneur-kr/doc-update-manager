@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { FaceSmileIcon } from '@heroicons/react/24/outline';
+import { CONFIG } from '../../config/env';
 
 interface InputBoxProps {
   onSendMessage: (message: string) => void;
@@ -20,7 +21,7 @@ export const InputBox: React.FC<InputBoxProps> = ({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, CONFIG.UI.TEXTAREA_MAX_HEIGHT)}px`;
     }
   }, [message]);
 
@@ -102,7 +103,7 @@ export const InputBox: React.FC<InputBoxProps> = ({
                 resize: 'none',
                 lineHeight: '1.4',
               }}
-              maxLength={1000}
+              maxLength={CONFIG.UI.MAX_MESSAGE_LENGTH}
               className={`flex-1 bg-transparent border-none outline-none text-sm text-black placeholder:text-gray-400 leading-tight ${
                 isLoading ? 'cursor-not-allowed opacity-60' : ''
               }`}
