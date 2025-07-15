@@ -22,3 +22,6 @@ Thumbs.db
 
 # Google Sheets credentials
 credentials/ 
+# Frontend build artifacts
+hotel-chatbot-frontend/node_modules/
+hotel-chatbot-frontend/dist/

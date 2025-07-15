@@ -1,28 +1,62 @@
 import { useState, useEffect } from 'react'
 import { ChatWindow } from './components/Chat/ChatWindow'
+import { MenuDropdown } from './components/Chat/MenuDropdown'
+import { WelcomeScreen } from './components/Chat/WelcomeScreen'
 import type { ChatMessage } from './types/chat'
-import { sendChatMessage, checkChatApiHealth } from './api/chatApi'
+import { sendChatMessage, checkChatApiHealthWithRetry, checkChatApiReady } from './api/chatApi'
 import { useChatHistory } from './hooks/useChatHistory'
 import { useToast } from './hooks/useToast'
 import { ToastContainer } from './components/UI/Toast'
-import { TrashIcon } from '@heroicons/react/24/outline'
+
 import './styles/globals.css'
 
 function App() {
   const { messages, addMessage, clearHistory } = useChatHistory();
-  const { toasts, removeToast, success, error: showError, info } = useToast();
+  const { toasts, removeToast, error: showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [apiStatus, setApiStatus] = useState<'checking' | 'warming_up' | 'connected' | 'disconnected'>('checking');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isChatStarted, setIsChatStarted] = useState(false);
 
-  // API 상태 확인 최적화
+
+
+  // API 상태 확인 최적화 - 빠른 준비 상태 체크
   useEffect(() => {
     let mounted = true;
+    let healthCheckInterval: number;
     
-    const checkApi = async () => {
+    const checkApiWithRetry = async () => {
       try {
-        const isHealthy = await checkChatApiHealth();
+        console.log('🔄 API 연결 상태 체크 시작');
+        // 헬스 체크로 연결 상태 확인 (Render cold start 고려한 타임아웃)
+        const readyCheck = await checkChatApiReady(5000);
+        console.log('🔄 첫 번째 체크 결과:', readyCheck);
+        
         if (mounted) {
-          setApiStatus(isHealthy ? 'connected' : 'disconnected');
+          if (readyCheck.ready) {
+            console.log('✅ 연결 성공!');
+            setApiStatus('connected');
+          } else {
+            console.log('⚠️ 첫 번째 체크 실패, 재시도 중...');
+            // 실패 시 재시도 (지수 백오프, 4회 시도, 8초 타임아웃)
+            const isHealthy = await checkChatApiHealthWithRetry(4, 1000, 8000);
+            console.log('🔄 재시도 결과:', isHealthy);
+            setApiStatus(isHealthy ? 'connected' : 'disconnected');
+          }
+        }
+        
+        // 연결 성공 시 주기적 체크 시작 (30초마다)
+        if (mounted && readyCheck.ready && !healthCheckInterval) {
+          healthCheckInterval = window.setInterval(async () => {
+            if (mounted) {
+              console.log('🔄 주기적 연결 상태 체크');
+              const quickCheck = await checkChatApiReady(6000);
+              console.log('🔄 주기적 체크 결과:', quickCheck);
+              if (mounted) {
+                setApiStatus(quickCheck.ready ? 'connected' : 'disconnected');
+              }
+            }
+          }, 30000);
         }
       } catch (error) {
         if (mounted) {
@@ -31,15 +65,34 @@ function App() {
       }
     };
     
-    checkApi();
+    checkApiWithRetry();
     
     return () => {
       mounted = false;
+      if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+      }
     };
   }, []);
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
+    
+    // API 연결 상태 확인
+    if (apiStatus === 'checking') {
+      showError('연결 확인 중', '서버 연결을 확인하는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    
+    if (apiStatus === 'warming_up') {
+      showError('서버 준비 중', '서버가 준비 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    
+    if (apiStatus === 'disconnected') {
+      showError('서버 연결 오류', '서버에 연결할 수 없습니다. 연결 상태를 확인해주세요.');
+      return;
+    }
     
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -60,7 +113,6 @@ function App() {
         timestamp: new Date()
       };
       addMessage(botMessage);
-      success('답변 완료', '메시지가 성공적으로 전송되었습니다.', 2000);
     } catch (error) {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -70,65 +122,91 @@ function App() {
       };
       addMessage(errorMessage);
       showError('전송 실패', '메시지 전송 중 오류가 발생했습니다.');
+      
+      // 연결 오류 시 상태 재확인
+      setApiStatus('checking');
+      setTimeout(async () => {
+        const isHealthy = await checkChatApiHealthWithRetry(3, 1500, 8000);
+        setApiStatus(isHealthy ? 'connected' : 'disconnected');
+      }, 1000);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClearHistory = () => {
-    if (window.confirm('대화 기록을 모두 삭제하시겠습니까?')) {
-      clearHistory();
-      info('기록 삭제', '대화 기록이 모두 삭제되었습니다.', 3000);
-    }
+
+  const handleExitChat = () => {
+    // 상담 종료 로직 - 초기 화면으로 돌아가기
+    setIsChatStarted(false);
+    clearHistory();
+    setIsMenuOpen(false);
+  };
+
+  const handleStartChat = () => {
+    setIsChatStarted(true);
   };
 
   return (
-    <div className="min-h-screen-mobile w-full bg-gradient-to-br from-neutral-100 via-white to-blue-50 flex items-center justify-center px-2 md:px-0 safe-area-all">
-      <div className="w-full max-w-[430px] h-[98vh] h-[98dvh] flex flex-col rounded-3xl shadow-2xl overflow-hidden border border-neutral-200 bg-white/95 backdrop-blur-sm relative touch-manipulation">
-        {/* 상단바 - 모바일 최적화 */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 bg-white/95 backdrop-blur-sm">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-lg font-bold text-white shadow-md">
-              🏨
+    <div className="min-h-screen bg-gray-50 flex flex-col overflow-hidden">
+      {/* 헤더 - 개선된 디자인 */}
+      <div className="bg-white border-b border-gray-200 shadow-sm px-5 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg shadow-sm"
+                 style={{
+                   background: 'linear-gradient(135deg, #0538FF 0%, #5799F7 100%)'
+                 }}>
+              💬
             </div>
-            <div className="font-semibold text-lg text-neutral-900 tracking-tight">호텔 챗봇</div>
+            <div className="flex flex-col">
+              <div className="text-lg font-bold text-black leading-tight">서정적인 호텔</div>
+              <div className="text-sm text-gray-500 leading-tight">AI가 바로 답변해 드려요</div>
+            </div>
           </div>
           
-          <div className="flex items-center space-x-1">
-            {/* 대화 기록 삭제 버튼 - 모바일 터치 최적화 */}
-            <button
-              onClick={handleClearHistory}
-              className="mobile-button-secondary touch-feedback touch-highlight-none"
-              title="대화 기록 삭제"
-              aria-label="대화 기록 삭제"
-            >
-              <TrashIcon className="w-5 h-5 text-gray-500" />
-            </button>
+          <div className="flex items-center">
+            <MenuDropdown 
+              onExitChat={handleExitChat}
+              onMenuStateChange={setIsMenuOpen}
+            />
           </div>
         </div>
-        
-        {/* 연결 상태 표시 - 모바일 최적화 */}
-        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+      </div>
+      
+      {/* 연결 상태 표시 (개선된 버전) */}
+      {apiStatus !== 'connected' && (
+        <div className={`px-4 py-2 border-b ${
+          apiStatus === 'warming_up' ? 'bg-blue-50 border-blue-200' :
+          apiStatus === 'checking' ? 'bg-yellow-50 border-yellow-200' : 
+          'bg-red-50 border-red-200'
+        }`}>
           <div className="flex items-center justify-center space-x-2">
             <span className={`w-2 h-2 rounded-full ${
-              apiStatus === 'connected' ? 'bg-green-400' : 
-              apiStatus === 'checking' ? 'bg-yellow-300' : 'bg-red-400'
+              apiStatus === 'warming_up' ? 'bg-blue-400 animate-pulse' :
+              apiStatus === 'checking' ? 'bg-yellow-400 animate-pulse' : 
+              'bg-red-400'
             }`}></span>
-            <span className="text-xs text-gray-500">
-              {apiStatus === 'connected' ? '연결됨' : 
-               apiStatus === 'checking' ? '확인 중' : '연결 끊김'}
+            <span className="text-xs text-gray-600">
+              {apiStatus === 'warming_up' ? '서버 워밍업 중...' :
+               apiStatus === 'checking' ? '연결 확인 중...' : 
+               '연결 끊김'}
             </span>
           </div>
         </div>
-        
-        {/* 채팅창 */}
-        <div className="flex-1 flex flex-col bg-gray-50">
+      )}
+      
+      {/* 메인 콘텐츠 */}
+      <div className="flex-1 flex flex-col bg-gray-50">
+        {!isChatStarted ? (
+          <WelcomeScreen onStartChat={handleStartChat} apiStatus={apiStatus} />
+        ) : (
           <ChatWindow 
             messages={messages} 
             onSendMessage={handleSendMessage} 
             isLoading={isLoading} 
+            isMenuOpen={isMenuOpen}
           />
-        </div>
+        )}
       </div>
       
       {/* 토스트 알림 */}

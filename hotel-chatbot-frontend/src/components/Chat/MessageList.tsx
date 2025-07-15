@@ -10,7 +10,7 @@ interface MessageListProps {
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading = false }) => {
   return (
-    <div className="flex flex-col gap-1 px-2 md:px-4 py-6">
+    <div className="flex flex-col px-2 sm:px-3 py-4">
       {messages.map((msg) => (
         <ChatBubble
           key={msg.id}

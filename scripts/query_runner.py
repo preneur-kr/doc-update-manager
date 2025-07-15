@@ -103,51 +103,80 @@ def run_query(
     Returns:
         Tuple[str, List[Tuple[dict, float]], bool]: (생성된 답변, 검색된 문서와 점수, fallback 여부)
     """
-    # 1. 벡터 검색 수행
-    searcher = FilteredVectorSearch()
-    search_results = searcher.similarity_search_with_metadata(
-        query=question,
-        k=k,
-        category=category,
-        section=section,
-        score_threshold=score_threshold
-    )
-    
-    # 2. 검색 결과가 없는 경우
-    if not search_results:
-        print("\n=== 검색 결과 없음: Fallback 응답 반환 ===")
+    try:
+        # 캐시에서 응답 확인
+        from scripts.response_cache import response_cache
+        cached_result = response_cache.get(question, category, section)
+        if cached_result:
+            answer, is_fallback = cached_result
+            print(f"🚀 캐시에서 응답 반환: {len(answer)}자")
+            # 캐시된 응답의 경우 검색 결과는 빈 리스트로 반환
+            return answer, [], is_fallback
+        
+        # 연결 관리자 사용으로 성능 개선
+        from scripts.connection_manager import connection_manager
+        
+        # 1. 벡터 검색 수행 (재사용 가능한 인스턴스)
+        searcher = connection_manager.vector_searcher
+        search_results = searcher.similarity_search_with_metadata(
+            query=question,
+            k=k,
+            category=category,
+            section=section,
+            score_threshold=score_threshold
+        )
+        
+        # 2. 검색 결과가 없는 경우
+        if not search_results:
+            print("\n=== 검색 결과 없음: Fallback 응답 반환 ===")
+            # 캐시에 저장
+            response_cache.set(question, FALLBACK_MESSAGE, True, category, section)
+            return FALLBACK_MESSAGE, [], True
+        
+        # 3. 컨텍스트 구성
+        context = "\n\n".join([
+            f"문서 {i+1}:\n{metadata['text']}\n"
+            f"섹션: {metadata.get('section', 'N/A')}\n"
+            f"카테고리: {metadata.get('category', 'N/A')}"
+            for i, (metadata, _) in enumerate(search_results)
+        ])
+        
+        # 4. GPT 답변 생성 (재사용 가능한 인스턴스)
+        llm = connection_manager.openai_llm
+        
+        prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        chain = prompt | llm
+        
+        response = chain.invoke({
+            "context": context,
+            "question": question
+        })
+        
+        # 5. GPT 응답이 fallback인지 확인
+        is_fallback = is_fallback_response(response.content)
+        if is_fallback:
+            print("\n=== GPT 응답이 fallback으로 감지됨 ===")
+            # 캐시에 저장
+            response_cache.set(question, FALLBACK_MESSAGE, True, category, section)
+            return FALLBACK_MESSAGE, search_results, True
+        
+        # 6. 정상 응답을 캐시에 저장
+        response_cache.set(question, response.content, False, category, section)
+        
+        return response.content, search_results, False
+        
+    except Exception as e:
+        print(f"❌ 질문 처리 중 오류 발생: {str(e)}")
+        # 연결 오류 시 재시도를 위해 연결 리셋
+        try:
+            from scripts.connection_manager import connection_manager
+            print("🔄 연결 오류로 인한 연결 리셋 시도...")
+            connection_manager.reset_connections()
+        except Exception:
+            pass
+        
+        # 오류 시 fallback 응답 반환 (캐시하지 않음)
         return FALLBACK_MESSAGE, [], True
-    
-    # 3. 컨텍스트 구성
-    context = "\n\n".join([
-        f"문서 {i+1}:\n{metadata['text']}\n"
-        f"섹션: {metadata.get('section', 'N/A')}\n"
-        f"카테고리: {metadata.get('category', 'N/A')}"
-        for i, (metadata, _) in enumerate(search_results)
-    ])
-    
-    # 4. GPT 답변 생성
-    llm = ChatOpenAI(
-        model_name="gpt-3.5-turbo",
-        temperature=0.7,
-        openai_api_key=OPENAI_API_KEY
-    )
-    
-    prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    chain = prompt | llm
-    
-    response = chain.invoke({
-        "context": context,
-        "question": question
-    })
-    
-    # 5. GPT 응답이 fallback인지 확인
-    is_fallback = is_fallback_response(response.content)
-    if is_fallback:
-        print("\n=== GPT 응답이 fallback으로 감지됨 ===")
-        return FALLBACK_MESSAGE, search_results, True
-    
-    return response.content, search_results, False
 
 def process_query(question: str, category: Optional[str] = None, section: Optional[str] = None) -> None:
     """

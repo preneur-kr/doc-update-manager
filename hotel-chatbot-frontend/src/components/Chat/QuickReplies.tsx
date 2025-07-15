@@ -1,17 +1,8 @@
 import React from 'react';
-import { 
-  ClockIcon, 
-  TruckIcon, 
-  HomeIcon, 
-  CreditCardIcon,
-  QuestionMarkCircleIcon,
-  CalendarDaysIcon
-} from '@heroicons/react/24/outline';
 
 interface QuickReply {
   id: string;
   text: string;
-  icon: React.ComponentType<{ className?: string }>;
   message: string;
 }
 
@@ -22,40 +13,24 @@ interface QuickRepliesProps {
 
 const quickReplies: QuickReply[] = [
   {
-    id: 'checkin',
-    text: '체크인 시간',
-    icon: ClockIcon,
-    message: '체크인 시간이 언제인가요?'
+    id: 'invoice',
+    text: '📄 인보이스 발행하기',
+    message: '인보이스를 발행해주세요'
   },
   {
     id: 'parking',
-    text: '주차 안내',
-    icon: TruckIcon,
+    text: '🚗 주차 안내',
     message: '주차 가능한가요?'
   },
   {
-    id: 'breakfast',
-    text: '조식 안내',
-    icon: HomeIcon,
-    message: '조식 제공하나요?'
+    id: 'reservation_status',
+    text: '📋 예약 현황 보러가기',
+    message: '예약 현황을 확인하고 싶어요'
   },
   {
     id: 'cancel',
-    text: '취소 정책',
-    icon: CreditCardIcon,
+    text: '❌ 취소 정책',
     message: '취소 정책이 궁금해요'
-  },
-  {
-    id: 'reservation',
-    text: '예약 변경',
-    icon: CalendarDaysIcon,
-    message: '예약 변경은 어떻게 하나요?'
-  },
-  {
-    id: 'other',
-    text: '기타 문의',
-    icon: QuestionMarkCircleIcon,
-    message: '기타 문의사항이 있어요'
   }
 ];
 
@@ -63,35 +38,39 @@ export const QuickReplies: React.FC<QuickRepliesProps> = ({ onSelectReply, isVis
   if (!isVisible) return null;
 
   return (
-    <div className="px-4 py-4 bg-white/95 backdrop-blur-sm border-t border-gray-100">
+    <div className="px-2 sm:px-3 py-3 sm:py-4 bg-gray-50 border-t border-gray-100">
       <div className="mb-3">
-        <span className="text-sm font-medium text-gray-600">빠른 답변</span>
+        <p className="text-sm text-gray-600 font-medium">빠른 답변</p>
       </div>
-      
-      <div className="grid grid-cols-2 gap-3 max-w-md">
+      <div className="flex flex-wrap gap-2">
         {quickReplies.map((reply) => {
-          const IconComponent = reply.icon;
           return (
             <button
               key={reply.id}
               onClick={() => onSelectReply(reply.message)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl 
-                       min-h-[48px]
-                       bg-gray-50 
-                       hover:bg-blue-50 
-                       active:bg-blue-100
-                       border border-gray-200 
-                       hover:border-blue-200 
-                       transition-all duration-200 ease-in-out
-                       text-left text-sm font-medium
-                       text-gray-700 
-                       hover:text-blue-700 
-                       group
-                       transform active:scale-95
-                       shadow-sm hover:shadow-md"
+              className="inline-block min-h-[40px] px-3 py-2 bg-white border border-gray-200 text-left transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              style={{
+                borderRadius: '24px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f8fafc';
+                e.currentTarget.style.borderColor = '#e2e8f0';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#ffffff';
+                e.currentTarget.style.borderColor = '#e5e7eb';
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.backgroundColor = '#f1f5f9';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.backgroundColor = '#f8fafc';
+              }}
+              aria-label={`빠른 답변: ${reply.text}`}
             >
-              <IconComponent className="w-5 h-5 text-gray-500 group-hover:text-blue-500 flex-shrink-0 transition-colors duration-200" />
-              <span className="truncate leading-tight">{reply.text}</span>
+              <span className="text-sm font-medium text-gray-800">
+                {reply.text}
+              </span>
             </button>
           );
         })}

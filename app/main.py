@@ -4,6 +4,8 @@ from app.core.config import settings
 from app.api.endpoints import document, slack
 from app.api.endpoints.chat import router as chat_router
 from datetime import datetime
+import asyncio
+import threading
 
 # Hotel Bot API with Chat functionality
 app = FastAPI(
@@ -17,7 +19,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Vite 개발 서버
+        "http://localhost:5173",  # Vite 개발 서버 (기본)
+        "http://localhost:5174",  # Vite 개발 서버 (설정된 포트)
         "http://localhost:3000",  # 일반적인 React 개발 서버
         "https://api.slack.com",  # Slack API
         "*"  # 기타 모든 출처 (개발 환경용)
@@ -33,6 +36,39 @@ app.include_router(document.router, prefix="/api/v1", tags=["document"])
 app.include_router(slack.router, prefix="/api/v1/slack", tags=["slack"])
 app.include_router(chat_router, prefix="/api/v1", tags=["chat"])
 
+# 연결 워밍업 실행
+def warm_up_connections():
+    """연결을 워밍업합니다."""
+    try:
+        print("🔥 연결 워밍업 시작...")
+        from scripts.connection_manager import connection_manager
+        connection_manager.warm_up()
+        print("✅ 연결 워밍업 완료")
+        return True
+    except Exception as e:
+        print(f"❌ 연결 워밍업 실패: {str(e)}")
+        return False
+
+@app.on_event("startup")
+async def startup_event():
+    """애플리케이션 시작 시 실행되는 이벤트"""
+    print("🚀 Hotel Bot API 시작 중...")
+    
+    # 우선 백그라운드에서 연결 워밍업 시작
+    loop = asyncio.get_event_loop()
+    warmup_task = loop.run_in_executor(None, warm_up_connections)
+    
+    # 중요한 연결은 즉시 초기화
+    try:
+        from scripts.connection_manager import connection_manager
+        # OpenAI 연결만 먼저 초기화 (가장 중요)
+        _ = connection_manager.openai_llm
+        print("✅ 핵심 연결 즉시 초기화 완료")
+    except Exception as e:
+        print(f"⚠️ 핵심 연결 즉시 초기화 실패: {str(e)}")
+    
+    print("✅ Hotel Bot API 시작 완료")
+
 @app.get("/")
 async def root():
     return {
@@ -45,6 +81,26 @@ async def root():
 async def ping():
     """Simple health check endpoint for load balancers"""
     return {"status": "pong", "timestamp": datetime.now().isoformat()}
+
+@app.get("/ready")
+async def ready_check():
+    """Fast readiness check for frontend connections"""
+    try:
+        # 빠른 연결 상태 확인 (타임아웃 없이)
+        from scripts.connection_manager import connection_manager
+        is_ready = connection_manager._openai_llm is not None
+        
+        return {
+            "status": "ready" if is_ready else "warming_up",
+            "timestamp": datetime.now().isoformat(),
+            "ready": is_ready
+        }
+    except Exception:
+        return {
+            "status": "warming_up",
+            "timestamp": datetime.now().isoformat(),
+            "ready": False
+        }
 
 @app.get("/health")
 async def health_check():
@@ -70,9 +126,22 @@ async def health_check():
                 detail=f"Missing required environment variables: {', '.join(missing_vars)}"
             )
         
+        # 연결 상태 확인 (선택적)
+        connection_status = "unknown"
+        try:
+            from scripts.connection_manager import connection_manager
+            # 연결이 초기화되어 있는지 확인
+            if connection_manager._openai_llm is not None:
+                connection_status = "warmed_up"
+            else:
+                connection_status = "cold"
+        except Exception:
+            connection_status = "error"
+        
         return {
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
+            "connection_status": connection_status,
             "config": {
                 "google_sheet_id": settings.GOOGLE_SHEET_ID[:8] + "..." if settings.GOOGLE_SHEET_ID else None,
                 "slack_bot_token_configured": bool(settings.SLACK_BOT_TOKEN),

@@ -151,6 +151,58 @@ body {
   }
 }
 
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 채널톡 스타일 메뉴 애니메이션 */
+@keyframes slideUp {
+  from { 
+    transform: translateY(100%); 
+  }
+  to { 
+    transform: translateY(0); 
+  }
+}
+
 /* Utility Classes */
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
@@ -160,12 +212,28 @@ body {
   animation: slideIn 0.3s ease-out;
 }
 
+.animate-slide-in-left {
+  animation: slide-in-left 300ms ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 300ms ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 300ms ease-out forwards;
+}
+
 .animate-pulse-slow {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .animate-bounce-slow {
   animation: bounce 1s infinite;
+}
+
+.animate-typing-bounce {
+  animation: typing-bounce 1.4s infinite ease-in-out;
 }
 
 /* Glass Effect */

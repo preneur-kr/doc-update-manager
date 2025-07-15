@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ChatMessage } from '../types/chat';
 
-const STORAGE_KEY = 'hotel-chatbot-history';
+const STORAGE_KEY = 'hotel-chatbot-history-v2';
 const MAX_MESSAGES = 50; // 최대 저장할 메시지 수
 
 export const useChatHistory = () => {
@@ -24,7 +24,7 @@ export const useChatHistory = () => {
           // 기본 웰컴 메시지
           const welcomeMessage: ChatMessage = {
             id: '1',
-            content: '안녕하세요! 호텔 정책에 대해 궁금한 점이 있으시면 언제든 물어보세요.',
+            content: '🏨 서정적인 호텔 고객센터 💬\n\n안녕하세요, 고객님! 😊\n\n투숙하시는 동안 불편한 점이나 궁금한 점이 있으신가요? 필요한 서비스나 문의사항이 있으시면 언제든 말씀해주세요.\n\n🚀 자주 문의하시는 내용이라면?\n아래 버튼을 눌러 바로 확인해보세요!',
             isUser: false,
             timestamp: new Date()
           };
@@ -35,7 +35,7 @@ export const useChatHistory = () => {
         // 기본 웰컴 메시지
         const welcomeMessage: ChatMessage = {
           id: '1',
-          content: '안녕하세요! 호텔 정책에 대해 궁금한 점이 있으시면 언제든 물어보세요.',
+          content: '🏨 서정적인 호텔 고객센터 💬\n\n안녕하세요, 고객님! 😊\n\n투숙하시는 동안 불편한 점이나 궁금한 점이 있으신가요? 필요한 서비스나 문의사항이 있으시면 언제든 말씀해주세요.\n\n🚀 자주 문의하시는 내용이라면?\n아래 버튼을 눌러 바로 확인해보세요!',
           isUser: false,
           timestamp: new Date()
         };
@@ -72,7 +72,7 @@ export const useChatHistory = () => {
       localStorage.removeItem(STORAGE_KEY);
       const welcomeMessage: ChatMessage = {
         id: '1',
-        content: '안녕하세요! 호텔 정책에 대해 궁금한 점이 있으시면 언제든 물어보세요.',
+        content: '🏨 서정적인 호텔 고객센터 💬\n\n안녕하세요, 고객님! 😊\n\n투숙하시는 동안 불편한 점이나 궁금한 점이 있으신가요? 필요한 서비스나 문의사항이 있으시면 언제든 말씀해주세요.\n\n🚀 자주 문의하시는 내용이라면?\n아래 버튼을 눌러 바로 확인해보세요!',
         isUser: false,
         timestamp: new Date()
       };

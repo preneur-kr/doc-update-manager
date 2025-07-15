@@ -31,7 +31,7 @@ services:
       - key: PINECONE_INDEX_NAME
         sync: false
       - key: ENVIRONMENT
-        value: production
+        value: production 
 
   - type: cron
     name: hotel-doc-auto-updater
