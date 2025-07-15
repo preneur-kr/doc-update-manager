@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { linkifyText } from '../../utils/linkUtils';
+import { debugLog } from '../../utils/debugUtils';
 
 interface ChatBubbleProps {
   message: string; // 원본 문자열 메시지 (UI 변경 없이 유지)
@@ -7,10 +8,111 @@ interface ChatBubbleProps {
   timestamp: Date;
 }
 
+// 🔧 안전한 링크 변환 함수 (보안 개선)
+const createSecureLinkifiedContent = (text: string, isUserMessage: boolean): React.ReactNode => {
+  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g;
+  
+  const parts: React.ReactNode[] = [];
+  let match;
+  let matchCount = 0;
+
+  // 줄바꿈 처리를 위해 먼저 라인별로 분할
+  const lines = text.split('\n');
+  
+  lines.forEach((line, lineIndex) => {
+    if (lineIndex > 0) {
+      parts.push(<br key={`br-${lineIndex}`} />);
+    }
+
+    let lineLastIndex = 0;
+    urlRegex.lastIndex = 0; // 정규식 상태 초기화
+
+    while ((match = urlRegex.exec(line)) !== null && matchCount < 10) {
+      matchCount++;
+      const matchStart = match.index;
+      const url = match[0];
+
+      // URL 앞의 텍스트 추가
+      if (matchStart > lineLastIndex) {
+        const beforeText = line.substring(lineLastIndex, matchStart);
+        parts.push(beforeText);
+      }
+
+      // 🔒 보안: URL 정규화 및 검증
+      let linkUrl = url;
+      if (url.startsWith('www.')) {
+        linkUrl = 'https://' + url;
+      } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        // 도메인 패턴 검증
+        if (/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}/.test(url)) {
+          linkUrl = 'https://' + url;
+        }
+      }
+
+      // 🔒 보안: 악성 URL 패턴 검사
+      const isSafeUrl = /^https?:\/\/[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]\.[a-zA-Z]{2,}(\/[^\s<>"'`]*)?$/.test(linkUrl);
+      
+      if (isSafeUrl) {
+        // 안전한 링크 컴포넌트 생성
+        const linkElement = (
+          <a
+            key={`link-${lineIndex}-${matchCount}`}
+            href={linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={
+              isUserMessage
+                ? 'text-blue-200 hover:text-blue-100 underline font-medium'
+                : 'text-blue-600 hover:text-blue-800 underline font-medium'
+            }
+            style={{
+              cursor: 'pointer',
+              pointerEvents: 'auto',
+              display: 'inline',
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              try {
+                window.open(linkUrl, '_blank', 'noopener,noreferrer');
+              } catch (error) {
+                debugLog.error('링크 열기 실패:', error);
+                // fallback: 현재 페이지에서 열기
+                window.location.href = linkUrl;
+              }
+            }}
+          >
+            {url}
+          </a>
+        );
+        parts.push(linkElement);
+      } else {
+        // 안전하지 않은 URL은 일반 텍스트로 표시
+        debugLog.warn('안전하지 않은 URL 감지:', url);
+        parts.push(url);
+      }
+
+      lineLastIndex = urlRegex.lastIndex;
+    }
+
+    // 라인의 남은 텍스트 추가
+    if (lineLastIndex < line.length) {
+      const remainingText = line.substring(lineLastIndex);
+      parts.push(remainingText);
+    }
+  });
+
+  return parts.length === 0 ? text : (
+    <span style={{ display: 'contents' }}>
+      {parts}
+    </span>
+  );
+};
+
 export const ChatBubble: React.FC<ChatBubbleProps> = ({
   message,
   isUser,
-  timestamp,
 }) => {
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
@@ -21,7 +123,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       setShowCopyFeedback(true);
       setTimeout(() => setShowCopyFeedback(false), 2000);
     } catch (err) {
-      console.error('복사 실패:', err);
+      debugLog.error('복사 실패:', err);
     }
   };
 
@@ -94,151 +196,45 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           }}
         >
           {(() => {
-            // 🔧 강화된 디버깅과 타입 검사
-            console.log('🔍 === ChatBubble 렌더링 시작 ===');
-            console.log('📝 원본 message:', message);
-            console.log('🔍 message 타입:', typeof message);
-            console.log('📏 message 길이:', message?.length);
-            console.log('👤 isUser:', isUser);
-            console.log('⏰ timestamp:', timestamp);
+            // 🔒 보안 개선: dangerouslySetInnerHTML 완전 제거
+            debugLog.log('🔍 === ChatBubble 렌더링 시작 (보안 개선) ===');
+            debugLog.log('📝 원본 message:', message);
+            debugLog.log('🔍 message 타입:', typeof message);
+            debugLog.log('👤 isUser:', isUser);
 
-            // message가 string인지 엄격하게 확인
+            // message가 string인지 확인
             if (typeof message === 'string') {
-              console.log('✅ message는 string 타입 - linkifyText 호출');
-
-              // URL 패턴이 있는지 미리 확인
-              const hasUrlPattern =
-                /https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}/g.test(
-                  message
-                );
-              console.log('🔗 URL 패턴 존재 여부:', hasUrlPattern);
-
+              // URL 패턴이 있는지 확인
+              const hasUrlPattern = /(https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g.test(message);
+              
               if (hasUrlPattern) {
-                console.log('🔗 URL 발견! linkifyText 호출 중...');
-
+                debugLog.log('🔗 URL 발견! 안전한 링크 변환 중...');
+                
                 try {
-                  const result = linkifyText(message, {
-                    isUserMessage: isUser,
-                  });
-
-                  console.log('⚛️ linkifyText 결과:', result);
-                  console.log('🔍 결과 타입:', typeof result);
-                  console.log(
-                    '✅ React 요소인가?',
-                    React.isValidElement(result)
-                  );
-
-                  // 결과가 null이나 undefined인지 확인
-                  if (result === null || result === undefined) {
-                    console.error('❌ linkifyText가 null/undefined를 반환!');
-                    return <span style={{ color: 'red' }}>렌더링 오류</span>;
+                  // 1차: linkifyText 함수 시도
+                  const result = linkifyText(message, { isUserMessage: isUser });
+                  
+                  // React 요소가 제대로 반환되었는지 확인
+                  if (React.isValidElement(result) || Array.isArray(result)) {
+                    debugLog.log('✅ linkifyText 성공, React 요소 반환');
+                    return result;
                   }
-
-                  // 문자열로 변환되었는지 확인
-                  if (typeof result === 'string') {
-                    console.warn(
-                      '⚠️ linkifyText 결과가 string으로 변환됨:',
-                      result
-                    );
-                    // 🔧 간단한 fallback: dangerouslySetInnerHTML 사용
-                    const simpleLinkified = message.replace(
-                      /(https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g,
-                      url => {
-                        let linkUrl = url;
-                        if (url.startsWith('www.')) {
-                          linkUrl = 'https://' + url;
-                        } else if (
-                          !url.startsWith('http://') &&
-                          !url.startsWith('https://')
-                        ) {
-                          linkUrl = 'https://' + url;
-                        }
-                        return `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="color: ${isUser ? '#93c5fd' : '#2563eb'}; text-decoration: underline; cursor: pointer;">${url}</a>`;
-                      }
-                    );
-                    return (
-                      <span
-                        dangerouslySetInnerHTML={{ __html: simpleLinkified }}
-                      />
-                    );
-                  }
-
-                  // DOM 렌더링 후 확인을 위한 타이머 (더 정확한 체크)
-                  setTimeout(() => {
-                    console.log('🔍 === 렌더링 후 DOM 검증 ===');
-                    const allLinks = document.querySelectorAll('a');
-                    const chatBubbles = document.querySelectorAll(
-                      '[class*="rounded-3xl"]'
-                    );
-
-                    console.log('🔗 전체 <a> 태그 개수:', allLinks.length);
-                    console.log('💬 ChatBubble 개수:', chatBubbles.length);
-
-                    // 현재 메시지를 포함한 버블 찾기
-                    const currentBubble = Array.from(chatBubbles).find(bubble =>
-                      bubble.textContent?.includes(message.substring(0, 20))
-                    );
-
-                    if (currentBubble) {
-                      const linksInCurrentBubble =
-                        currentBubble.querySelectorAll('a');
-                      console.log(
-                        '📎 현재 버블의 <a> 태그 개수:',
-                        linksInCurrentBubble.length
-                      );
-
-                      if (hasUrlPattern && linksInCurrentBubble.length === 0) {
-                        console.error(
-                          '❌ URL이 있지만 <a> 태그가 생성되지 않음!'
-                        );
-                        console.log(
-                          '📄 버블 innerHTML:',
-                          currentBubble.innerHTML
-                        );
-                      }
-                    } else {
-                      console.warn(
-                        '⚠️ 현재 메시지에 해당하는 버블을 찾을 수 없음'
-                      );
-                    }
-                  }, 200);
-
-                  console.log('✅ linkifyText 결과 반환');
-                  return result;
+                  
+                  // 문자열이 반환된 경우 보안 함수 사용
+                  debugLog.log('⚠️ linkifyText가 문자열 반환, 보안 함수로 대체');
+                  return createSecureLinkifiedContent(message, isUser);
+                  
                 } catch (error) {
-                  console.error('❌ linkifyText 실행 중 오류:', error);
-                  // 🔧 오류 시 간단한 fallback
-                  const simpleLinkified = message.replace(
-                    /(https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g,
-                    url => {
-                      let linkUrl = url;
-                      if (url.startsWith('www.')) {
-                        linkUrl = 'https://' + url;
-                      } else if (
-                        !url.startsWith('http://') &&
-                        !url.startsWith('https://')
-                      ) {
-                        linkUrl = 'https://' + url;
-                      }
-                      return `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="color: ${isUser ? '#93c5fd' : '#2563eb'}; text-decoration: underline; cursor: pointer;">${url}</a>`;
-                    }
-                  );
-                  return (
-                    <span
-                      dangerouslySetInnerHTML={{ __html: simpleLinkified }}
-                    />
-                  );
+                  debugLog.error('❌ linkifyText 실행 중 오류:', error);
+                  // 🔒 오류 시에도 보안 함수 사용
+                  return createSecureLinkifiedContent(message, isUser);
                 }
               } else {
-                console.log('📝 URL 없음 - 원본 텍스트 반환');
+                debugLog.log('📝 URL 없음 - 원본 텍스트 반환');
                 return message;
               }
             } else {
-              console.warn(
-                '⚠️ message가 string이 아님:',
-                typeof message,
-                message
-              );
+              debugLog.warn('⚠️ message가 string이 아님:', typeof message, message);
               return message;
             }
           })()}

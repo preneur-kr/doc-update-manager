@@ -1,4 +1,5 @@
-import { linkifyText, hasLinks, isValidUrl } from './linkUtils';
+import { linkifyText, hasLinks } from './linkUtils';
+import { registerDebugFunctions, onlyInDev } from './debugUtils';
 
 /**
  * 링크 기능을 테스트하는 함수들
@@ -56,6 +57,18 @@ export const runAllTests = () => {
 };
 
 /**
+ * URL 유효성 검증 함수
+ */
+const isValidUrl = (url: string): boolean => {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+/**
  * URL 유효성 검증 테스트
  */
 export const testUrlValidation = () => {
@@ -83,13 +96,9 @@ export const testLinkify = () => {
   testUrlValidation();
 };
 
-// 전역 함수로 등록 (타입 안전)
-if (typeof window !== 'undefined') {
-  interface WindowWithLinkTest extends Window {
-    testLinksInConsole?: typeof testLinkify;
-  }
-  
-  const windowWithLinkTest = window as WindowWithLinkTest;
-  windowWithLinkTest.testLinksInConsole = testLinkify;
-  console.log('🔗 testLinksInConsole 함수가 등록되었습니다.');
-}
+// 🔒 보안: 개발 환경에서만 전역 함수 등록
+onlyInDev(() => {
+  registerDebugFunctions({
+    testLinksInConsole: testLinkify,
+  });
+});

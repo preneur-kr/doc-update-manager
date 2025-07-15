@@ -62,7 +62,7 @@ function App() {
             }
           }, 30000);
         }
-      } catch (error) {
+      } catch {
         if (mounted) {
           setApiStatus('disconnected');
         }

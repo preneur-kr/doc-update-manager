@@ -1,17 +1,18 @@
 import type { ChatResponse, ChatMessage } from '../types/chat';
+import { debugLog, registerDebugFunctions, onlyInDev } from '../utils/debugUtils';
 
 // API 기본 URL - 환경 변수 사용
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   'https://doc-update-manager.onrender.com';
 
-// 디버깅을 위한 로그
-console.log('🌐 API_BASE_URL:', API_BASE_URL);
-console.log(
+// 🔒 보안: 개발 환경에서만 디버깅 로그
+debugLog.log('🌐 API_BASE_URL:', API_BASE_URL);
+debugLog.log(
   '🌐 환경변수 VITE_API_BASE_URL:',
   import.meta.env.VITE_API_BASE_URL
 );
-console.log('🌐 모든 환경변수:', import.meta.env);
+debugLog.log('🌐 모든 환경변수:', import.meta.env);
 
 export interface ChatRequest {
   message: string;
@@ -31,7 +32,7 @@ export const sendChatMessage = async (
   const url = `${API_BASE_URL}/api/v1/chat`;
   const startTime = performance.now();
 
-  console.log('🚀 API 호출 시작:', {
+  debugLog.log('🚀 API 호출 시작:', {
     url,
     baseUrl: API_BASE_URL,
     request,
@@ -49,7 +50,7 @@ export const sendChatMessage = async (
 
     const responseTime = performance.now() - startTime;
 
-    console.log('📡 API 응답 상태:', {
+    debugLog.log('📡 API 응답 상태:', {
       status: response.status,
       statusText: response.statusText,
       ok: response.ok,
@@ -58,10 +59,10 @@ export const sendChatMessage = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ API 오류 응답:', errorText);
+      debugLog.error('❌ API 오류 응답:', errorText);
 
       // 성능 메트릭 로그 (오류 시)
-      console.log('📊 성능 메트릭 (오류):', {
+      debugLog.log('📊 성능 메트릭 (오류):', {
         responseTime: `${responseTime.toFixed(2)}ms`,
         status: 'error',
         statusCode: response.status,
@@ -76,7 +77,7 @@ export const sendChatMessage = async (
     const totalTime = performance.now() - startTime;
 
     // 성능 메트릭 로그 (성공 시)
-    console.log('📊 성능 메트릭 (성공):', {
+    debugLog.log('📊 성능 메트릭 (성공):', {
       responseTime: `${totalTime.toFixed(2)}ms`,
       status: 'success',
       messageLength: request.message.length,
@@ -84,19 +85,19 @@ export const sendChatMessage = async (
       isFallback: data.is_fallback,
     });
 
-    console.log('✅ API 응답 성공:', data);
+    debugLog.log('✅ API 응답 성공:', data);
     return data;
   } catch (error) {
     const errorTime = performance.now() - startTime;
 
     // 성능 메트릭 로그 (예외 시)
-    console.log('📊 성능 메트릭 (예외):', {
+    debugLog.log('📊 성능 메트릭 (예외):', {
       responseTime: `${errorTime.toFixed(2)}ms`,
       status: 'exception',
       error: error instanceof Error ? error.message : 'unknown',
     });
 
-    console.error('💥 채팅 API 호출 중 오류:', error);
+    debugLog.error('💥 채팅 API 호출 중 오류:', error);
     throw new Error(
       '서버와의 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
     );
@@ -112,7 +113,7 @@ export const checkChatApiReady = async (
 ): Promise<{ ready: boolean; status: string }> => {
   const healthUrl = `${API_BASE_URL}/health`;
   const startTime = performance.now();
-  console.log(
+  debugLog.log(
     '⚡ 빠른 준비 상태 체크 시작:',
     healthUrl,
     `(타임아웃: ${timeout}ms)`
@@ -134,7 +135,7 @@ export const checkChatApiReady = async (
 
     if (response.ok) {
       const data = await response.json();
-      console.log(
+      debugLog.log(
         '⚡ 빠른 준비 상태 응답:',
         data,
         `(${responseTime.toFixed(0)}ms)`
@@ -145,7 +146,7 @@ export const checkChatApiReady = async (
         status: data.status || 'ready',
       };
     } else {
-      console.warn(
+      debugLog.warn(
         '⚠️ 헬스 체크 HTTP 오류:',
         response.status,
         `(${responseTime.toFixed(0)}ms)`
@@ -155,13 +156,13 @@ export const checkChatApiReady = async (
   } catch (error) {
     const responseTime = performance.now() - startTime;
     if (error instanceof Error && error.name === 'AbortError') {
-      console.error(
+      debugLog.error(
         '❌ 빠른 준비 상태 확인 타임아웃:',
         timeout + 'ms',
         `(실제: ${responseTime.toFixed(0)}ms)`
       );
     } else {
-      console.error(
+      debugLog.error(
         '❌ 빠른 준비 상태 확인 중 오류:',
         error,
         `(${responseTime.toFixed(0)}ms)`
@@ -180,7 +181,7 @@ export const checkChatApiHealth = async (
 ): Promise<boolean> => {
   const healthUrl = `${API_BASE_URL}/health`;
   const startTime = performance.now();
-  console.log('🏥 헬스 체크 시작:', healthUrl, `(타임아웃: ${timeout}ms)`);
+  debugLog.log('🏥 헬스 체크 시작:', healthUrl, `(타임아웃: ${timeout}ms)`);
 
   try {
     const controller = new AbortController();
@@ -196,7 +197,7 @@ export const checkChatApiHealth = async (
     clearTimeout(timeoutId);
     const responseTime = performance.now() - startTime;
 
-    console.log('🏥 헬스 체크 응답:', {
+    debugLog.log('🏥 헬스 체크 응답:', {
       status: response.status,
       statusText: response.statusText,
       ok: response.ok,
@@ -206,13 +207,13 @@ export const checkChatApiHealth = async (
   } catch (error) {
     const responseTime = performance.now() - startTime;
     if (error instanceof Error && error.name === 'AbortError') {
-      console.error(
+      debugLog.error(
         '❌ API 상태 확인 타임아웃:',
         timeout + 'ms',
         `(실제: ${responseTime.toFixed(0)}ms)`
       );
     } else {
-      console.error(
+      debugLog.error(
         '❌ API 상태 확인 중 오류:',
         error,
         `(${responseTime.toFixed(0)}ms)`
@@ -236,25 +237,25 @@ export const checkChatApiHealthWithRetry = async (
   baseDelay: number = 1000,
   timeout: number = 8000
 ): Promise<boolean> => {
-  console.log(
+  debugLog.log(
     `🔄 헬스 체크 재시도 시작 - 최대 ${maxRetries}회, 기본지연 ${baseDelay}ms, 타임아웃 ${timeout}ms`
   );
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const attemptStartTime = performance.now();
-    console.log(`🔄 헬스 체크 시도 ${attempt}/${maxRetries}`);
+    debugLog.log(`🔄 헬스 체크 시도 ${attempt}/${maxRetries}`);
 
     const isHealthy = await checkChatApiHealth(timeout);
     const attemptTime = performance.now() - attemptStartTime;
 
     if (isHealthy) {
-      console.log(
+      debugLog.log(
         `✅ 헬스 체크 성공 (${attempt}회차, ${attemptTime.toFixed(0)}ms)`
       );
       return true;
     }
 
-    console.warn(
+    debugLog.warn(
       `❌ 헬스 체크 실패 (${attempt}회차, ${attemptTime.toFixed(0)}ms)`
     );
 
@@ -265,7 +266,7 @@ export const checkChatApiHealthWithRetry = async (
       const maxDelay = 8000; // 최대 8초로 제한
       const actualDelay = Math.min(delay, maxDelay);
 
-      console.log(
+      debugLog.log(
         `⏳ ${actualDelay}ms 후 재시도... (지수 백오프: ${attempt}회차)`
       );
 
@@ -274,7 +275,7 @@ export const checkChatApiHealthWithRetry = async (
     }
   }
 
-  console.error(`❌ 모든 헬스 체크 시도 실패 (총 ${maxRetries}회 시도 완료)`);
+  debugLog.error(`❌ 모든 헬스 체크 시도 실패 (총 ${maxRetries}회 시도 완료)`);
   return false;
 };
 
@@ -290,11 +291,11 @@ export const sendMessage = sendChatMessage;
  * 여러 번 연속으로 헬스 체크를 실행하여 응답 시간 분포 확인
  */
 export const testHealthCheckPerformance = async (testCount: number = 5) => {
-  console.log(`🧪 헬스 체크 성능 테스트 시작 (${testCount}회)`);
+  debugLog.log(`🧪 헬스 체크 성능 테스트 시작 (${testCount}회)`);
   const results = [];
 
   for (let i = 1; i <= testCount; i++) {
-    console.log(`--- 테스트 ${i}/${testCount} ---`);
+    debugLog.log(`--- 테스트 ${i}/${testCount} ---`);
     const startTime = performance.now();
 
     try {
@@ -309,7 +310,7 @@ export const testHealthCheckPerformance = async (testCount: number = 5) => {
         status: result.status,
       });
 
-      console.log(
+      debugLog.log(
         `✅ 테스트 ${i} 완료: ${duration.toFixed(0)}ms, 성공: ${result.ready}`
       );
     } catch (error) {
@@ -323,7 +324,7 @@ export const testHealthCheckPerformance = async (testCount: number = 5) => {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      console.log(
+      debugLog.log(
         `❌ 테스트 ${i} 실패: ${duration.toFixed(0)}ms, 오류: ${error}`
       );
     }
@@ -341,13 +342,13 @@ export const testHealthCheckPerformance = async (testCount: number = 5) => {
   const maxDuration = Math.max(...results.map(r => r.duration));
   const minDuration = Math.min(...results.map(r => r.duration));
 
-  console.log(`📊 성능 테스트 결과 요약:`);
-  console.log(
+  debugLog.log(`📊 성능 테스트 결과 요약:`);
+  debugLog.log(
     `  - 성공률: ${successCount}/${testCount} (${((successCount / testCount) * 100).toFixed(1)}%)`
   );
-  console.log(`  - 평균 응답시간: ${avgDuration.toFixed(0)}ms`);
-  console.log(`  - 최대 응답시간: ${maxDuration}ms`);
-  console.log(`  - 최소 응답시간: ${minDuration}ms`);
+  debugLog.log(`  - 평균 응답시간: ${avgDuration.toFixed(0)}ms`);
+  debugLog.log(`  - 최대 응답시간: ${maxDuration}ms`);
+  debugLog.log(`  - 최소 응답시간: ${minDuration}ms`);
 
   return {
     results,
@@ -365,12 +366,12 @@ export const testHealthCheckPerformance = async (testCount: number = 5) => {
  * 의도적으로 짧은 타임아웃을 사용하여 재시도 동작 확인
  */
 export const testRetryLogic = async () => {
-  console.log('🧪 재시도 로직 테스트 시작');
+  debugLog.log('🧪 재시도 로직 테스트 시작');
 
   // 매우 짧은 타임아웃으로 실패를 유도하여 재시도 로직 테스트
   const result = await checkChatApiHealthWithRetry(3, 500, 100);
 
-  console.log('🧪 재시도 로직 테스트 완료:', result);
+  debugLog.log('🧪 재시도 로직 테스트 완료:', result);
   return result;
 };
 
@@ -379,50 +380,40 @@ export const testRetryLogic = async () => {
  * 실제 App.tsx에서 사용하는 것과 동일한 로직으로 테스트
  */
 export const testFullConnectionFlow = async () => {
-  console.log('🧪 전체 연결 플로우 테스트 시작');
+  debugLog.log('🧪 전체 연결 플로우 테스트 시작');
 
   try {
     // 1단계: 빠른 체크
-    console.log('1️⃣ 빠른 연결 체크');
+    debugLog.log('1️⃣ 빠른 연결 체크');
     const quickCheck = await checkChatApiReady(5000);
 
     if (quickCheck.ready) {
-      console.log('✅ 빠른 체크 성공 - 연결 완료');
+      debugLog.log('✅ 빠른 체크 성공 - 연결 완료');
       return { success: true, method: 'quick' };
     }
 
     // 2단계: 재시도 로직
-    console.log('2️⃣ 재시도 로직 실행');
+    debugLog.log('2️⃣ 재시도 로직 실행');
     const retryResult = await checkChatApiHealthWithRetry(4, 1000, 8000);
 
     if (retryResult) {
-      console.log('✅ 재시도 성공 - 연결 완료');
+      debugLog.log('✅ 재시도 성공 - 연결 완료');
       return { success: true, method: 'retry' };
     } else {
-      console.log('❌ 모든 시도 실패 - 연결 실패');
+      debugLog.log('❌ 모든 시도 실패 - 연결 실패');
       return { success: false, method: 'failed' };
     }
   } catch (error) {
-    console.error('❌ 연결 플로우 테스트 중 오류:', error);
+    debugLog.error('❌ 연결 플로우 테스트 중 오류:', error);
     return { success: false, method: 'error', error };
   }
 };
 
-// 브라우저 콘솔에서 사용할 수 있도록 전역 함수로 등록
-if (typeof window !== 'undefined') {
-  // 개발 환경 전역 함수 타입 안전 등록
-  interface WindowWithTestFunctions extends Window {
-    testHealthPerformance: typeof testHealthCheckPerformance;
-    testRetryLogic: typeof testRetryLogic;
-    testConnectionFlow: typeof testFullConnectionFlow;
-  }
-  
-  const windowWithTests = window as unknown as WindowWithTestFunctions;
-  windowWithTests.testHealthPerformance = testHealthCheckPerformance;
-  windowWithTests.testRetryLogic = testRetryLogic;
-  windowWithTests.testConnectionFlow = testFullConnectionFlow;
-  console.log('🧪 테스트 함수들이 등록되었습니다:');
-  console.log('  - window.testHealthPerformance(5) // 헬스 체크 5회 테스트');
-  console.log('  - window.testRetryLogic() // 재시도 로직 테스트');
-  console.log('  - window.testConnectionFlow() // 전체 연결 플로우 테스트');
-}
+// 🔒 보안: 개발 환경에서만 전역 함수 등록
+onlyInDev(() => {
+  registerDebugFunctions({
+    testHealthPerformance: testHealthCheckPerformance,
+    testRetryLogic,
+    testConnectionFlow: testFullConnectionFlow,
+  });
+});
