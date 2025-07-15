@@ -36,7 +36,7 @@ export const linkifyText = (
 
     // 각 줄에서 URL 처리
     const urlRegex =
-      /(https?:\/\/[^\s<>"{}|\\^`\[\]]+|www\.[^\s<>"{}|\\^`\[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g;
+      /(https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match;
@@ -173,7 +173,7 @@ export const linkifyText = (
  */
 export const hasLinks = (text: string): boolean => {
   if (!text || typeof text !== 'string') return false;
-  const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g;
+  const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
   return urlRegex.test(text);
 };
 
@@ -215,13 +215,23 @@ export const testLinkify = (testText?: string) => {
   };
 };
 
-// 전역 함수로 등록 (개발용)
+// 전역 함수로 등록 (개발용) - 타입 안전
 if (typeof window !== 'undefined') {
-  (window as any).testLinkify = testLinkify;
+  // 개발 환경 디버깅 함수들 타입 정의
+  interface WindowWithDebugFunctions extends Window {
+    testLinkify?: typeof testLinkify;
+    testDOMRendering?: () => void;
+    debugChatLinks?: () => void;
+    debugMessageTypes?: () => void;
+    forceTestLink?: (text?: string) => void;
+  }
+  
+  const windowWithDebug = window as WindowWithDebugFunctions;
+  windowWithDebug.testLinkify = testLinkify;
   console.log('🔗 testLinkify 함수가 window.testLinkify()로 등록되었습니다.');
 
   // 실제 DOM 렌더링 테스트 함수
-  (window as any).testDOMRendering = () => {
+  windowWithDebug.testDOMRendering = () => {
     console.log('🧪 DOM 렌더링 테스트 시작');
 
     // 1. linkifyText 함수 테스트
@@ -251,7 +261,7 @@ if (typeof window !== 'undefined') {
   };
 
   // 🔧 새로운 강력한 DOM 실시간 검사 함수
-  (window as any).debugChatLinks = () => {
+  windowWithDebug.debugChatLinks = () => {
     console.log('🔍 === 챗봇 링크 실시간 디버깅 ===');
 
     // 1. 모든 채팅 버블 찾기
@@ -295,7 +305,13 @@ if (typeof window !== 'undefined') {
 
     // 3. React DevTools 정보 (가능한 경우)
     const reactRoot = document.getElementById('root');
-    if (reactRoot && (reactRoot as any)._reactInternalFiber) {
+    // React 내부 속성 타입 정의 (개발자 도구용)
+    interface ElementWithReactFiber extends HTMLElement {
+      _reactInternalFiber?: unknown;
+    }
+    
+    const rootWithFiber = reactRoot as ElementWithReactFiber | null;
+    if (rootWithFiber && rootWithFiber._reactInternalFiber) {
       console.log('⚛️ React 상태 확인 가능');
     }
 
@@ -309,7 +325,7 @@ if (typeof window !== 'undefined') {
   };
 
   // 🔧 메시지 타입 검사 함수
-  (window as any).debugMessageTypes = () => {
+  windowWithDebug.debugMessageTypes = () => {
     console.log('🔍 === 메시지 타입 디버깅 ===');
 
     // localStorage에서 메시지 히스토리 확인 (가능한 경우)
@@ -318,14 +334,14 @@ if (typeof window !== 'undefined') {
       try {
         const messages = JSON.parse(chatHistory);
         console.log('💾 저장된 메시지 개수:', messages.length);
-        messages.forEach((msg: any, index: number) => {
+        messages.forEach((msg: { type?: string; content?: string; isUser?: boolean }, index: number) => {
           console.log(`메시지 ${index + 1}:`, {
             type: typeof msg.content,
             content: msg.content,
             isUser: msg.isUser,
           });
         });
-      } catch (_e) {
+      } catch {
         console.log('💾 메시지 히스토리 파싱 실패');
       }
     }
@@ -334,7 +350,7 @@ if (typeof window !== 'undefined') {
   };
 
   // 🔧 강제 링크 테스트 함수
-  (window as any).forceTestLink = (text?: string) => {
+  windowWithDebug.forceTestLink = (text?: string) => {
     const testText = text || '강제 테스트: https://www.google.com 링크입니다';
     console.log('🚀 강제 링크 테스트 시작');
     console.log('📝 테스트 텍스트:', testText);

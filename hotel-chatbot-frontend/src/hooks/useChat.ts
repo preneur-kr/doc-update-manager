@@ -63,7 +63,7 @@ export const useChat = () => {
       };
 
       dispatch({ type: 'ADD_MESSAGE', payload: botMessage });
-    } catch (_error) {
+    } catch {
       dispatch({
         type: 'SET_ERROR',
         payload: '메시지 전송에 실패했습니다. 다시 시도해주세요.',

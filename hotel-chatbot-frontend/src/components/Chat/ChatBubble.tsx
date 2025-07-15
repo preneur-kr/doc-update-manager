@@ -108,7 +108,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
               // URL 패턴이 있는지 미리 확인
               const hasUrlPattern =
-                /https?:\/\/[^\s<>"{}|\\^`\[\]]+|www\.[^\s<>"{}|\\^`\[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}/g.test(
+                /https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}/g.test(
                   message
                 );
               console.log('🔗 URL 패턴 존재 여부:', hasUrlPattern);
@@ -142,7 +142,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                     );
                     // 🔧 간단한 fallback: dangerouslySetInnerHTML 사용
                     const simpleLinkified = message.replace(
-                      /(https?:\/\/[^\s<>"{}|\\^`\[\]]+|www\.[^\s<>"{}|\\^`\[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g,
+                      /(https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g,
                       url => {
                         let linkUrl = url;
                         if (url.startsWith('www.')) {
@@ -209,7 +209,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                   console.error('❌ linkifyText 실행 중 오류:', error);
                   // 🔧 오류 시 간단한 fallback
                   const simpleLinkified = message.replace(
-                    /(https?:\/\/[^\s<>"{}|\\^`\[\]]+|www\.[^\s<>"{}|\\^`\[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g,
+                    /(https?:\/\/[^\s<>"{}|\\^`[\]]+|www\.[^\s<>"{}|\\^`[\]]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/g,
                     url => {
                       let linkUrl = url;
                       if (url.startsWith('www.')) {

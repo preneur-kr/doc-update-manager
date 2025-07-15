@@ -15,7 +15,7 @@ export const useChatHistory = () => {
         if (stored) {
           const parsed = JSON.parse(stored);
           // 날짜 객체로 변환
-          const messagesWithDates = parsed.map((msg: any) => ({
+          const messagesWithDates = parsed.map((msg: Omit<ChatMessage, 'timestamp'> & { timestamp: string }) => ({
             ...msg,
             timestamp: new Date(msg.timestamp),
           }));

@@ -40,7 +40,8 @@ export const useStreamingText = ({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [text]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, startDelay]);
 
   const streamText = () => {
     if (indexRef.current < text.length) {

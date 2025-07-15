@@ -56,7 +56,7 @@ function App() {
             }
           }, 30000);
         }
-      } catch (error) {
+      } catch (_error) {
         if (mounted) {
           setApiStatus('disconnected');
         }
@@ -111,7 +111,7 @@ function App() {
         timestamp: new Date()
       };
       addMessage(botMessage);
-    } catch (error) {
+    } catch (_error) {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: error instanceof Error ? error.message : '서버와의 통신 중 오류가 발생했습니다.',

@@ -83,8 +83,13 @@ export const testLinkify = () => {
   testUrlValidation();
 };
 
-// 전역 함수로 등록
+// 전역 함수로 등록 (타입 안전)
 if (typeof window !== 'undefined') {
-  (window as any).testLinksInConsole = testLinkify;
+  interface WindowWithLinkTest extends Window {
+    testLinksInConsole?: typeof testLinkify;
+  }
+  
+  const windowWithLinkTest = window as WindowWithLinkTest;
+  windowWithLinkTest.testLinksInConsole = testLinkify;
   console.log('🔗 testLinksInConsole 함수가 등록되었습니다.');
 }

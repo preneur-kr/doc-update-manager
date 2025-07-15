@@ -18,17 +18,6 @@ export const useMessageQueue = ({
   const [messageQueue, setMessageQueue] = useState<QueuedMessage[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
-  // API 연결 완료 시 큐의 메시지들을 자동 전송
-  useEffect(() => {
-    if (
-      apiStatus === 'connected' &&
-      messageQueue.length > 0 &&
-      !isProcessingQueue
-    ) {
-      processQueue();
-    }
-  }, [apiStatus, messageQueue.length, isProcessingQueue]);
-
   const processQueue = useCallback(async () => {
     if (messageQueue.length === 0 || isProcessingQueue) return;
 
@@ -49,6 +38,17 @@ export const useMessageQueue = ({
       setIsProcessingQueue(false);
     }
   }, [messageQueue, isProcessingQueue, onSendMessage]);
+
+  // API 연결 완료 시 큐의 메시지들을 자동 전송
+  useEffect(() => {
+    if (
+      apiStatus === 'connected' &&
+      messageQueue.length > 0 &&
+      !isProcessingQueue
+    ) {
+      processQueue();
+    }
+  }, [apiStatus, messageQueue.length, isProcessingQueue, processQueue]);
 
   const queueMessage = useCallback((message: string) => {
     const queuedMessage: QueuedMessage = {

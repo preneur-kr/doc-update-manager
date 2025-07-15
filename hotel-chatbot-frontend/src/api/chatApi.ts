@@ -410,10 +410,17 @@ export const testFullConnectionFlow = async () => {
 
 // 브라우저 콘솔에서 사용할 수 있도록 전역 함수로 등록
 if (typeof window !== 'undefined') {
-  (window as any).testHealthPerformance = testHealthCheckPerformance;
-  (window as any).testRetryLogic = testRetryLogic;
-  (window as any).testConnectionFlow = testFullConnectionFlow;
-
+  // 개발 환경 전역 함수 타입 안전 등록
+  interface WindowWithTestFunctions extends Window {
+    testHealthPerformance: typeof testHealthCheckPerformance;
+    testRetryLogic: typeof testRetryLogic;
+    testConnectionFlow: typeof testFullConnectionFlow;
+  }
+  
+  const windowWithTests = window as unknown as WindowWithTestFunctions;
+  windowWithTests.testHealthPerformance = testHealthCheckPerformance;
+  windowWithTests.testRetryLogic = testRetryLogic;
+  windowWithTests.testConnectionFlow = testFullConnectionFlow;
   console.log('🧪 테스트 함수들이 등록되었습니다:');
   console.log('  - window.testHealthPerformance(5) // 헬스 체크 5회 테스트');
   console.log('  - window.testRetryLogic() // 재시도 로직 테스트');
