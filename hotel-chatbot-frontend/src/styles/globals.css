@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 html {
   min-height: 100%;
@@ -24,7 +24,7 @@ body {
   --primary-700: #1d4ed8;
   --primary-800: #1e40af;
   --primary-900: #1e3a8a;
-  
+
   /* Neutral Colors */
   --neutral-50: #f8fafc;
   --neutral-100: #f1f5f9;
@@ -36,35 +36,37 @@ body {
   --neutral-700: #334155;
   --neutral-800: #1e293b;
   --neutral-900: #0f172a;
-  
+
   /* Success Colors */
   --success-50: #f0fdf4;
   --success-500: #22c55e;
   --success-600: #16a34a;
-  
+
   /* Warning Colors */
   --warning-50: #fffbeb;
   --warning-500: #f59e0b;
   --warning-600: #d97706;
-  
+
   /* Error Colors */
   --error-50: #fef2f2;
   --error-500: #ef4444;
   --error-600: #dc2626;
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl:
+    0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
   /* Border Radius */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
-  
+
   /* Transitions */
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 250ms ease-in-out;
@@ -77,8 +79,18 @@ body {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: linear-gradient(135deg, var(--neutral-50) 0%, var(--primary-50) 100%);
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Roboto',
+    sans-serif;
+  background: linear-gradient(
+    135deg,
+    var(--neutral-50) 0%,
+    var(--primary-50) 100%
+  );
   min-height: 100vh;
   color: var(--neutral-900);
   line-height: 1.6;
@@ -128,7 +140,8 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -137,10 +150,15 @@ body {
 }
 
 @keyframes bounce {
-  0%, 20%, 53%, 80%, 100% {
+  0%,
+  20%,
+  53%,
+  80%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
-  40%, 43% {
+  40%,
+  43% {
     transform: translate3d(0, -8px, 0);
   }
   70% {
@@ -174,7 +192,9 @@ body {
 }
 
 @keyframes typing-bounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
   40% {
@@ -195,11 +215,11 @@ body {
 
 /* 채널톡 스타일 메뉴 애니메이션 */
 @keyframes slideUp {
-  from { 
-    transform: translateY(100%); 
+  from {
+    transform: translateY(100%);
   }
-  to { 
-    transform: translateY(0); 
+  to {
+    transform: translateY(0);
   }
 }
 
@@ -258,7 +278,9 @@ body {
 
 .focus-ring:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--primary-500), 0 0 0 4px white;
+  box-shadow:
+    0 0 0 2px var(--primary-500),
+    0 0 0 4px white;
 }
 
 /* Button Styles */
@@ -279,7 +301,9 @@ body {
 }
 
 .btn-primary:focus {
-  box-shadow: 0 0 0 2px var(--primary-500), 0 0 0 4px white;
+  box-shadow:
+    0 0 0 2px var(--primary-500),
+    0 0 0 4px white;
 }
 
 .btn-secondary {
@@ -311,7 +335,9 @@ body {
 .input-modern:focus {
   border-color: var(--primary-500);
   outline: none;
-  box-shadow: 0 0 0 2px var(--primary-500), 0 0 0 4px white;
+  box-shadow:
+    0 0 0 2px var(--primary-500),
+    0 0 0 4px white;
 }
 
 /* Card Styles */
@@ -338,31 +364,34 @@ body {
 /* 모바일 터치 최적화 */
 @media (max-width: 768px) {
   /* 터치 타겟 최소 크기 보장 */
-  button, [role="button"], input[type="button"], input[type="submit"] {
+  button,
+  [role='button'],
+  input[type='button'],
+  input[type='submit'] {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* 터치 피드백 */
   .touch-feedback {
     transform: scale(1);
     transition: transform 150ms ease-in-out;
   }
-  
+
   .touch-feedback:active {
     transform: scale(0.95);
   }
-  
+
   /* 터치 하이라이트 제거 */
   .touch-highlight-none {
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   /* 모바일 스크롤 최적화 */
   * {
     -webkit-overflow-scrolling: touch;
   }
-  
+
   /* 오버스크롤 방지 */
   .overscroll-contain {
     overscroll-behavior: contain;
@@ -434,4 +463,3 @@ body {
 .touch-manipulation {
   touch-action: manipulation;
 }
-

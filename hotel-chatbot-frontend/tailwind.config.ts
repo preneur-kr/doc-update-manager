@@ -1,15 +1,12 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from 'tailwindcss';
 
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ['Inter', 'sans-serif'],
       },
       colors: {
         primary: {
@@ -39,9 +36,9 @@ export default {
       },
       boxShadow: {
         'xl-dark': '0 8px 32px 0 rgba(0,0,0,0.45)',
-        'dark': '0 4px 16px 0 rgba(0,0,0,0.3)',
+        dark: '0 4px 16px 0 rgba(0,0,0,0.3)',
       },
     },
   },
   plugins: [],
-} satisfies Config 
+} satisfies Config;

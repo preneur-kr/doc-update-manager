@@ -7,11 +7,11 @@ interface UseStreamingTextOptions {
   onComplete?: () => void;
 }
 
-export const useStreamingText = ({ 
-  text, 
-  speed = 30, 
+export const useStreamingText = ({
+  text,
+  speed = 30,
   startDelay = 300,
-  onComplete 
+  onComplete,
 }: UseStreamingTextOptions) => {
   const [displayText, setDisplayText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -46,7 +46,7 @@ export const useStreamingText = ({
     if (indexRef.current < text.length) {
       setDisplayText(text.slice(0, indexRef.current + 1));
       indexRef.current += 1;
-      
+
       timeoutRef.current = setTimeout(streamText, speed);
     } else {
       setIsStreaming(false);
@@ -70,6 +70,6 @@ export const useStreamingText = ({
     displayText,
     isStreaming,
     isComplete,
-    skipToEnd
+    skipToEnd,
   };
-}; 
+};

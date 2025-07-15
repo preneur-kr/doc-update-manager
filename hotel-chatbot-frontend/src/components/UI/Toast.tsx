@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -41,7 +47,7 @@ export const Toast: React.FC<ToastProps> = ({
   message,
   duration = 4000,
   onClose,
-  position = 'top'
+  position = 'top',
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
@@ -51,7 +57,7 @@ export const Toast: React.FC<ToastProps> = ({
   useEffect(() => {
     // 등장 애니메이션
     const showTimer = setTimeout(() => setIsVisible(true), 50);
-    
+
     // 자동 닫기
     const hideTimer = setTimeout(() => {
       setIsExiting(true);
@@ -74,8 +80,13 @@ export const Toast: React.FC<ToastProps> = ({
       className={`
         fixed left-4 right-4 z-50 transform transition-all duration-300 ease-out
         ${position === 'top' ? 'top-4 safe-area-top' : 'bottom-4 safe-area-bottom'}
-        ${isVisible && !isExiting ? 'translate-y-0 opacity-100' : 
-          position === 'top' ? '-translate-y-full opacity-0' : 'translate-y-full opacity-0'}
+        ${
+          isVisible && !isExiting
+            ? 'translate-y-0 opacity-100'
+            : position === 'top'
+              ? '-translate-y-full opacity-0'
+              : 'translate-y-full opacity-0'
+        }
       `}
     >
       <div
@@ -86,22 +97,26 @@ export const Toast: React.FC<ToastProps> = ({
           touch-manipulation
         `}
       >
-        <div className="flex items-start space-x-3">
-          <Icon className={`w-6 h-6 ${iconColors[type]} flex-shrink-0 mt-0.5`} />
-          
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold leading-tight">{title}</p>
+        <div className='flex items-start space-x-3'>
+          <Icon
+            className={`w-6 h-6 ${iconColors[type]} flex-shrink-0 mt-0.5`}
+          />
+
+          <div className='flex-1 min-w-0'>
+            <p className='text-sm font-semibold leading-tight'>{title}</p>
             {message && (
-              <p className="text-xs mt-1 opacity-90 leading-relaxed">{message}</p>
+              <p className='text-xs mt-1 opacity-90 leading-relaxed'>
+                {message}
+              </p>
             )}
           </div>
-          
+
           <button
             onClick={handleClose}
-            className="flex-shrink-0 ml-2 p-1 rounded-full hover:bg-black/10 transition-colors duration-200 touch-feedback"
-            aria-label="알림 닫기"
+            className='flex-shrink-0 ml-2 p-1 rounded-full hover:bg-black/10 transition-colors duration-200 touch-feedback'
+            aria-label='알림 닫기'
           >
-            <XMarkIcon className="w-4 h-4 opacity-60" />
+            <XMarkIcon className='w-4 h-4 opacity-60' />
           </button>
         </div>
       </div>
@@ -125,11 +140,11 @@ interface ToastContainerProps {
 export const ToastContainer: React.FC<ToastContainerProps> = ({
   toasts,
   onClose,
-  position = 'top'
+  position = 'top',
 }) => {
   return (
     <>
-      {toasts.map((toast) => (
+      {toasts.map(toast => (
         <Toast
           key={toast.id}
           id={toast.id}
@@ -143,4 +158,4 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
       ))}
     </>
   );
-}; 
+};

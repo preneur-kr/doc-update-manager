@@ -11,7 +11,12 @@ interface ChatWindowProps {
   isMenuOpen?: boolean;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, isLoading, isMenuOpen = false }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({
+  messages,
+  onSendMessage,
+  isLoading,
+  isMenuOpen = false,
+}) => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
@@ -57,29 +62,34 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
   };
 
   return (
-    <div className={`flex flex-col h-full relative transition-colors duration-300 ${
-      isMenuOpen ? 'bg-gray-100' : 'bg-gray-50'
-    }`}>
+    <div
+      className={`flex flex-col h-full relative transition-colors duration-300 ${
+        isMenuOpen ? 'bg-gray-100' : 'bg-gray-50'
+      }`}
+    >
       {/* 메시지 리스트 - 고정 높이로 스크롤 강제 */}
-      <div 
+      <div
         ref={messagesContainerRef}
-        className="flex-1 px-2 sm:px-3 py-4 sm:py-6 overflow-y-scroll overscroll-contain" 
-        style={{ 
+        className='flex-1 px-2 sm:px-3 py-4 sm:py-6 overflow-y-scroll overscroll-contain'
+        style={{
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
           maxHeight: isMenuOpen ? 'calc(100vh - 350px)' : 'calc(100vh - 200px)', // 메뉴 열림 상태에 따라 높이 조정
-          minHeight: '300px' // 최소 높이 보장
+          minHeight: '300px', // 최소 높이 보장
         }}
       >
         <MessageList messages={messages} isLoading={isLoading} />
         <div ref={messagesEndRef} />
       </div>
-      
+
       {/* 빠른 답변 */}
       {showQuickReplies && !isLoading && (
-        <QuickReplies onSelectReply={handleQuickReply} isVisible={showQuickReplies} />
+        <QuickReplies
+          onSelectReply={handleQuickReply}
+          isVisible={showQuickReplies}
+        />
       )}
-      
+
       {/* 하단 입력창 - 항상 표시 */}
       <InputBox onSendMessage={onSendMessage} isLoading={isLoading} />
     </div>

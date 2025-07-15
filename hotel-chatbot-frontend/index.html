@@ -2,26 +2,29 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    
+
     <!-- 모바일 최적화 뷰포트 설정 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+
     <!-- PWA 기본 설정 -->
     <meta name="theme-color" content="#3b82f6" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="호텔 AI 챗봇" />
-    
+
     <!-- 기본 메타 정보 -->
     <meta name="description" content="24시간 호텔 고객 서비스 AI 챗봇" />
     <meta name="keywords" content="호텔, 챗봇, 고객서비스, AI" />
-    
+
     <!-- 파비콘 -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    
+
     <!-- 제목 -->
     <title>호텔 AI 챗봇 - 24시간 고객 서비스</title>
-    
+
     <!-- 모바일 환경 최적화 CSS -->
     <style>
       /* 기본 리셋 및 모바일 최적화 */
@@ -33,29 +36,34 @@
         -ms-user-select: none;
         user-select: none;
       }
-      
+
       /* 텍스트는 선택 가능하게 */
-      p, span, div[class*="text"], div[class*="message"] {
+      p,
+      span,
+      div[class*='text'],
+      div[class*='message'] {
         -webkit-user-select: text;
         -moz-user-select: text;
         -ms-user-select: text;
         user-select: text;
       }
-      
+
       /* iOS 스타일 제거 */
-      input, textarea, button {
+      input,
+      textarea,
+      button {
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
         border-radius: 0;
       }
-      
+
       /* 모바일 스크롤 최적화 */
       html {
         -webkit-overflow-scrolling: touch;
         scroll-behavior: smooth;
       }
-      
+
       /* 전체 화면 활용 */
       body {
         margin: 0;
@@ -67,7 +75,7 @@
         padding-left: env(safe-area-inset-left);
         padding-right: env(safe-area-inset-right);
       }
-      
+
       /* 루트 컨테이너 최적화 */
       #root {
         min-height: 100vh;

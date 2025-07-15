@@ -40,15 +40,15 @@ export const runAllTests = () => {
   testCases.forEach((testCase, index) => {
     console.log(`\n📝 테스트 ${index + 1}: ${testCase.name}`);
     console.log('입력:', testCase.text);
-    
+
     // linkifyText 테스트
     const result = linkifyText(testCase.text);
     console.log('linkifyText 결과:', result);
-    
+
     // hasLinks 테스트
     const hasLinksResult = hasLinks(testCase.text);
     console.log('hasLinks 결과:', hasLinksResult);
-    
+
     console.log('-'.repeat(30));
   });
 
@@ -87,4 +87,4 @@ export const testLinkify = () => {
 if (typeof window !== 'undefined') {
   (window as any).testLinksInConsole = testLinkify;
   console.log('🔗 testLinksInConsole 함수가 등록되었습니다.');
-} 
+}

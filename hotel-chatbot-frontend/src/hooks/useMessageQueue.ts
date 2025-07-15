@@ -11,13 +11,20 @@ interface UseMessageQueueOptions {
   onSendMessage: (message: string) => Promise<void>;
 }
 
-export const useMessageQueue = ({ apiStatus, onSendMessage }: UseMessageQueueOptions) => {
+export const useMessageQueue = ({
+  apiStatus,
+  onSendMessage,
+}: UseMessageQueueOptions) => {
   const [messageQueue, setMessageQueue] = useState<QueuedMessage[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
   // API 연결 완료 시 큐의 메시지들을 자동 전송
   useEffect(() => {
-    if (apiStatus === 'connected' && messageQueue.length > 0 && !isProcessingQueue) {
+    if (
+      apiStatus === 'connected' &&
+      messageQueue.length > 0 &&
+      !isProcessingQueue
+    ) {
       processQueue();
     }
   }, [apiStatus, messageQueue.length, isProcessingQueue]);
@@ -26,13 +33,13 @@ export const useMessageQueue = ({ apiStatus, onSendMessage }: UseMessageQueueOpt
     if (messageQueue.length === 0 || isProcessingQueue) return;
 
     setIsProcessingQueue(true);
-    
+
     try {
       // 큐의 첫 번째 메시지 처리
       const [firstMessage, ...remainingMessages] = messageQueue;
-      
+
       await onSendMessage(firstMessage.content);
-      
+
       // 성공적으로 전송된 메시지를 큐에서 제거
       setMessageQueue(remainingMessages);
     } catch (error) {
@@ -47,7 +54,7 @@ export const useMessageQueue = ({ apiStatus, onSendMessage }: UseMessageQueueOpt
     const queuedMessage: QueuedMessage = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       content: message,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     setMessageQueue(prev => [...prev, queuedMessage]);
@@ -62,6 +69,6 @@ export const useMessageQueue = ({ apiStatus, onSendMessage }: UseMessageQueueOpt
     queueMessage,
     clearQueue,
     isProcessingQueue,
-    hasQueuedMessages: messageQueue.length > 0
+    hasQueuedMessages: messageQueue.length > 0,
   };
-}; 
+};
