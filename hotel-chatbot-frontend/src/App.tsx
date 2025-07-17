@@ -1,174 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChatWindow } from './components/Chat/ChatWindow';
 import { MenuDropdown } from './components/Chat/MenuDropdown';
 import { WelcomeScreen } from './components/Chat/WelcomeScreen';
-import type { ChatMessage } from './types/chat';
-import {
-  sendChatMessage,
-  checkChatApiHealthWithRetry,
-  checkChatApiReady,
-} from './api/chatApi';
-import { useChatHistory } from './hooks/useChatHistory';
+import { useChat } from './hooks/useChat';
 import { useToast } from './hooks/useToast';
 import { ToastContainer } from './components/UI/Toast';
 import { CONFIG } from './config/env';
-import { debugLog } from './utils/debugUtils';
 
 import './styles/globals.css';
 
 function App() {
-  const { messages, addMessage, clearHistory } = useChatHistory();
   const { toasts, removeToast, error: showError } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [apiStatus, setApiStatus] = useState<
-    'checking' | 'warming_up' | 'connected' | 'disconnected'
-  >('checking');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isChatStarted, setIsChatStarted] = useState(false);
 
-  // API 상태 확인 최적화 - 빠른 준비 상태 체크
-  useEffect(() => {
-    let mounted = true;
-    let healthCheckInterval: number;
-
-    const checkApiWithRetry = async () => {
-      try {
-        debugLog.log('🔄 API 연결 상태 체크 시작');
-        // 헬스 체크로 연결 상태 확인 (Render cold start 고려한 타임아웃)
-        const readyCheck = await checkChatApiReady(CONFIG.API.TIMEOUT_QUICK);
-        debugLog.log('🔄 첫 번째 체크 결과:', readyCheck);
-
-        if (mounted) {
-          if (readyCheck.ready) {
-            debugLog.log('✅ 연결 성공!');
-            setApiStatus('connected');
-          } else {
-            debugLog.log('⚠️ 첫 번째 체크 실패, 재시도 중...');
-            // 실패 시 재시도 (지수 백오프, 설정된 재시도 횟수 및 타임아웃)
-            const isHealthy = await checkChatApiHealthWithRetry(
-              CONFIG.API.RETRY_COUNT,
-              CONFIG.API.RETRY_DELAY,
-              CONFIG.API.TIMEOUT_HEALTH
-            );
-            debugLog.log('🔄 재시도 결과:', isHealthy);
-            setApiStatus(isHealthy ? 'connected' : 'disconnected');
-          }
-        }
-
-        // 연결 성공 시 주기적 체크 시작 (설정된 간격으로)
-        if (mounted && readyCheck.ready && !healthCheckInterval) {
-          healthCheckInterval = window.setInterval(async () => {
-            if (mounted) {
-              debugLog.log('🔄 주기적 연결 상태 체크');
-              const quickCheck = await checkChatApiReady(CONFIG.API.TIMEOUT_EXTENDED);
-              debugLog.log('🔄 주기적 체크 결과:', quickCheck);
-              if (mounted) {
-                setApiStatus(quickCheck.ready ? 'connected' : 'disconnected');
-              }
-            }
-          }, CONFIG.API.HEALTH_CHECK_INTERVAL);
-        }
-      } catch {
-        if (mounted) {
-          setApiStatus('disconnected');
-        }
-      }
-    };
-
-    checkApiWithRetry();
-
-    return () => {
-      mounted = false;
-      if (healthCheckInterval) {
-        clearInterval(healthCheckInterval);
-      }
-    };
-  }, []);
-
-  const handleSendMessage = async (message: string) => {
-    if (!message.trim()) return;
-
-    // API 연결 상태 확인
-    if (apiStatus === 'checking') {
-      showError(
-        '연결 확인 중',
-        '서버 연결을 확인하는 중입니다. 잠시 후 다시 시도해주세요.'
-      );
-      return;
-    }
-
-    if (apiStatus === 'warming_up') {
-      showError(
-        '서버 준비 중',
-        '서버가 준비 중입니다. 잠시 후 다시 시도해주세요.'
-      );
-      return;
-    }
-
-    if (apiStatus === 'disconnected') {
-      showError(
-        '서버 연결 오류',
-        '서버에 연결할 수 없습니다. 연결 상태를 확인해주세요.'
-      );
-      return;
-    }
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content: message,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    addMessage(userMessage);
-    setIsLoading(true);
-
-    try {
-      const response = await sendChatMessage({ message });
-      const botMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: response.answer,
-        isUser: false,
-        timestamp: new Date(),
-      };
-      addMessage(botMessage);
-    } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content:
-          error instanceof Error
-            ? error.message
-            : '서버와의 통신 중 오류가 발생했습니다.',
-        isUser: false,
-        timestamp: new Date(),
-      };
-      addMessage(errorMessage);
-      showError('전송 실패', '메시지 전송 중 오류가 발생했습니다.');
-
-      // 연결 오류 시 상태 재확인
-      setApiStatus('checking');
-      setTimeout(async () => {
-        const isHealthy = await checkChatApiHealthWithRetry(
-          CONFIG.API.RETRY_COUNT - 1, // 오류 시에는 재시도 횟수를 줄임
-          CONFIG.API.RETRY_DELAY_EXTENDED,
-          CONFIG.API.TIMEOUT_HEALTH
-        );
-        setApiStatus(isHealthy ? 'connected' : 'disconnected');
-      }, CONFIG.API.RECONNECT_DELAY);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // 통합된 채팅 상태 관리
+  const {
+    messages,
+    isLoading,
+    apiStatus,
+    isChatStarted,
+    sendMessage,
+    startChat,
+    exitChat,
+  } = useChat({
+    onError: showError, // 토스트 에러 핸들러 연결
+  });
 
   const handleExitChat = () => {
     // 상담 종료 로직 - 초기 화면으로 돌아가기
-    setIsChatStarted(false);
-    clearHistory();
+    exitChat();
     setIsMenuOpen(false);
-  };
-
-  const handleStartChat = () => {
-    setIsChatStarted(true);
   };
 
   return (
@@ -239,11 +100,11 @@ function App() {
       {/* 메인 콘텐츠 */}
       <div className='flex-1 flex flex-col bg-gray-50'>
         {!isChatStarted ? (
-          <WelcomeScreen onStartChat={handleStartChat} apiStatus={apiStatus} />
+          <WelcomeScreen onStartChat={startChat} apiStatus={apiStatus} />
         ) : (
           <ChatWindow
             messages={messages}
-            onSendMessage={handleSendMessage}
+            onSendMessage={sendMessage}
             isLoading={isLoading}
             isMenuOpen={isMenuOpen}
           />

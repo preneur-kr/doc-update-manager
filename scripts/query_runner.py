@@ -83,7 +83,7 @@ def load_prompt_template() -> str:
 # ✅ 프롬프트 템플릿 로드
 PROMPT_TEMPLATE = load_prompt_template()
 
-def run_query(
+async def run_query(
     question: str,
     category: Optional[str] = None,
     section: Optional[str] = None,
@@ -104,33 +104,59 @@ def run_query(
         Tuple[str, List[Tuple[dict, float]], bool]: (생성된 답변, 검색된 문서와 점수, fallback 여부)
     """
     try:
-        # 캐시에서 응답 확인
-        from scripts.response_cache import response_cache
-        cached_result = response_cache.get(question, category, section)
-        if cached_result:
-            answer, is_fallback = cached_result
-            print(f"🚀 캐시에서 응답 반환: {len(answer)}자")
-            # 캐시된 응답의 경우 검색 결과는 빈 리스트로 반환
-            return answer, [], is_fallback
+        # 🚀 분산 캐시에서 응답 확인 (L1 + L2 캐시)
+        try:
+            from scripts.distributed_cache import get_cached_response
+            cached_result = await get_cached_response(question, category, section)
+            if cached_result:
+                answer, is_fallback = cached_result
+                print(f"🚀 분산 캐시에서 응답 반환: {len(answer)}자")
+                # 캐시된 응답의 경우 검색 결과는 빈 리스트로 반환
+                return answer, [], is_fallback
+        except:
+            # 분산 캐시 실패 시 기존 캐시 사용
+            from scripts.response_cache import response_cache
+            cached_result = response_cache.get(question, category, section)
+            if cached_result:
+                answer, is_fallback = cached_result
+                print(f"🚀 로컬 캐시에서 응답 반환: {len(answer)}자")
+                return answer, [], is_fallback
         
         # 연결 관리자 사용으로 성능 개선
         from scripts.connection_manager import connection_manager
         
-        # 1. 벡터 검색 수행 (재사용 가능한 인스턴스)
-        searcher = connection_manager.vector_searcher
-        search_results = searcher.similarity_search_with_metadata(
-            query=question,
-            k=k,
-            category=category,
-            section=section,
-            score_threshold=score_threshold
-        )
+        # 1. 🚀 최적화된 벡터 검색 수행 (캐싱, 병렬처리, 지능형 필터링)
+        try:
+            from scripts.optimized_vector_search import smart_search
+            search_results = await smart_search(
+                query=question,
+                k=k,
+                category=category,
+                section=section,
+                score_threshold=score_threshold
+            )
+        except:
+            # 최적화된 검색 실패 시 기본 검색 사용
+            searcher = connection_manager.vector_searcher
+            search_results = searcher.similarity_search_with_metadata(
+                query=question,
+                k=k,
+                category=category,
+                section=section,
+                score_threshold=score_threshold
+            )
         
         # 2. 검색 결과가 없는 경우
         if not search_results:
             print("\n=== 검색 결과 없음: Fallback 응답 반환 ===")
-            # 캐시에 저장
-            response_cache.set(question, FALLBACK_MESSAGE, True, category, section)
+            # 🚀 분산 캐시에 저장
+            try:
+                from scripts.distributed_cache import cache_response
+                await cache_response(question, FALLBACK_MESSAGE, True, category, section)
+            except:
+                # 분산 캐시 실패 시 로컬 캐시 사용
+                from scripts.response_cache import response_cache
+                response_cache.set(question, FALLBACK_MESSAGE, True, category, section)
             return FALLBACK_MESSAGE, [], True
         
         # 3. 컨텍스트 구성
@@ -156,12 +182,22 @@ def run_query(
         is_fallback = is_fallback_response(response.content)
         if is_fallback:
             print("\n=== GPT 응답이 fallback으로 감지됨 ===")
-            # 캐시에 저장
-            response_cache.set(question, FALLBACK_MESSAGE, True, category, section)
+            # 🚀 분산 캐시에 저장
+            try:
+                from scripts.distributed_cache import cache_response
+                await cache_response(question, FALLBACK_MESSAGE, True, category, section)
+            except:
+                from scripts.response_cache import response_cache
+                response_cache.set(question, FALLBACK_MESSAGE, True, category, section)
             return FALLBACK_MESSAGE, search_results, True
         
-        # 6. 정상 응답을 캐시에 저장
-        response_cache.set(question, response.content, False, category, section)
+        # 6. 🚀 정상 응답을 분산 캐시에 저장
+        try:
+            from scripts.distributed_cache import cache_response
+            await cache_response(question, response.content, False, category, section)
+        except:
+            from scripts.response_cache import response_cache
+            response_cache.set(question, response.content, False, category, section)
         
         return response.content, search_results, False
         

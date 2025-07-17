@@ -32,8 +32,8 @@ async def chat_with_bot(request: ChatRequest):
     try:
         print(f"📝 채팅 요청 받음: {request.message}")
         
-        # 1. 질문 처리
-        original_answer, search_results, is_fallback = run_query(
+        # 1. 질문 처리 (🚀 분산 캐시 지원)
+        original_answer, search_results, is_fallback = await run_query(
             question=request.message,
             category=request.category,
             section=request.section

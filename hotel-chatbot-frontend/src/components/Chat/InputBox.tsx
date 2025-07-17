@@ -1,6 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { FaceSmileIcon } from '@heroicons/react/24/outline';
+
+// 🚀 성능 최적화: Emoji Picker를 동적 import로 지연 로딩
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
+
+// Emoji picker용 타입은 직접 정의 (번들 크기 절약)
+interface EmojiClickData {
+  emoji: string;
+  [key: string]: any;
+}
 import { CONFIG } from '../../config/env';
 
 interface InputBoxProps {
@@ -121,19 +129,27 @@ export const InputBox: React.FC<InputBoxProps> = ({
               <FaceSmileIcon className='w-5 h-5' />
             </button>
 
-            {/* 이모지 피커 */}
+            {/* 이모지 피커 - 지연 로딩으로 성능 최적화 */}
             {showEmojiPicker && (
               <div
                 ref={emojiPickerRef}
                 className='absolute bottom-full right-0 mb-2 z-50'
               >
-                <EmojiPicker
-                  onEmojiClick={handleEmojiClick}
-                  width={window.innerWidth < 640 ? 280 : 300}
-                  height={window.innerWidth < 640 ? 350 : 400}
-                  previewConfig={{ showPreview: false }}
-                  skinTonesDisabled
-                />
+                <Suspense 
+                  fallback={
+                    <div className='w-[280px] sm:w-[300px] h-[350px] sm:h-[400px] bg-white rounded-lg shadow-lg border border-gray-200 flex items-center justify-center'>
+                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500'></div>
+                    </div>
+                  }
+                >
+                  <EmojiPicker
+                    onEmojiClick={handleEmojiClick}
+                    width={window.innerWidth < 640 ? 280 : 300}
+                    height={window.innerWidth < 640 ? 350 : 400}
+                    previewConfig={{ showPreview: false }}
+                    skinTonesDisabled
+                  />
+                </Suspense>
               </div>
             )}
           </div>

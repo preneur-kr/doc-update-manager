@@ -3,9 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.endpoints import document, slack
 from app.api.endpoints.chat import router as chat_router
+from app.middleware.performance_middleware import (
+    create_performance_middlewares,
+    set_performance_tracker,
+    get_performance_tracker,
+    RequestTrackingMiddleware
+)
 from datetime import datetime
 import asyncio
 import threading
+import os
 
 # Hotel Bot API with Chat functionality
 app = FastAPI(
@@ -13,6 +20,27 @@ app = FastAPI(
     description="Hotel Bot API with Slack integration",
     version="1.0.0"
 )
+
+# 🚀 성능 최적화 미들웨어 적용
+is_production = os.getenv('ENVIRONMENT', 'development') == 'production'
+performance_middlewares = create_performance_middlewares(
+    enable_compression=True,
+    enable_caching=True,
+    enable_tracking=True,
+    enable_rate_limiting=is_production,  # 프로덕션에서만 레이트 리미팅
+    detailed_logging=not is_production  # 개발 환경에서만 상세 로깅
+)
+
+# 성능 미들웨어 추가
+tracker_middleware = None
+for middleware in performance_middlewares:
+    middleware_instance = middleware(app)
+    app.add_middleware(type(middleware_instance), **middleware_instance.__dict__)
+    
+    # 추적 미들웨어 저장
+    if isinstance(middleware_instance, RequestTrackingMiddleware):
+        tracker_middleware = middleware_instance
+        set_performance_tracker(middleware_instance)
 
 # CORS 설정
 # 개발 환경과 프로덕션 환경 모두 지원
@@ -68,6 +96,66 @@ async def startup_event():
         print(f"⚠️ 핵심 연결 즉시 초기화 실패: {str(e)}")
     
     print("✅ Hotel Bot API 시작 완료")
+
+# 🚀 성능 모니터링 엔드포인트
+@app.get("/metrics", tags=["monitoring"])
+async def get_performance_metrics():
+    """실시간 성능 메트릭 조회"""
+    tracker = get_performance_tracker()
+    if not tracker:
+        return {"error": "Performance tracking not enabled"}
+    
+    performance_stats = tracker.get_performance_summary()
+    
+    # 캐시 통계 추가
+    try:
+        from scripts.distributed_cache import get_distributed_cache
+        cache = await get_distributed_cache()
+        cache_stats = await cache.get_cache_stats()
+        performance_stats['cache_stats'] = cache_stats
+    except Exception as e:
+        performance_stats['cache_stats'] = {"error": str(e)}
+    
+    # 벡터 검색 통계 추가
+    try:
+        from scripts.optimized_vector_search import get_optimized_searcher
+        searcher = get_optimized_searcher()
+        search_stats = searcher.get_performance_stats()
+        performance_stats['search_stats'] = search_stats
+    except Exception as e:
+        performance_stats['search_stats'] = {"error": str(e)}
+    
+    return {
+        "status": "ok",
+        "timestamp": datetime.now().isoformat(),
+        "performance": performance_stats
+    }
+
+@app.get("/health", tags=["monitoring"])
+async def health_check():
+    """🏥 고도화된 헬스 체크"""
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "2.0.0",
+        "environment": os.getenv('ENVIRONMENT', 'development')
+    }
+    
+    # 연결 상태 확인
+    try:
+        from scripts.connection_manager import connection_manager
+        connection_info = connection_manager.get_connection_info()
+        health_status['connections'] = connection_info
+    except Exception as e:
+        health_status['connections'] = {"error": str(e)}
+        health_status['status'] = "degraded"
+    
+    # 활성 요청 수
+    tracker = get_performance_tracker()
+    if tracker:
+        health_status['active_requests'] = tracker.get_active_requests_count()
+    
+    return health_status
 
 @app.get("/")
 async def root():
