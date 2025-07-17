@@ -97,6 +97,51 @@ async def startup_event():
     
     print("✅ Hotel Bot API 시작 완료")
 
+# 🔧 임시 디버그 엔드포인트 (프롬프트 확인용)
+@app.get("/debug/prompt", tags=["debug"])
+async def debug_prompt_template():
+    """🔍 현재 사용 중인 프롬프트 템플릿 확인 (디버그용)"""
+    try:
+        from scripts.query_runner import load_prompt_template, DEFAULT_PROMPT_TEMPLATE
+        import os
+        
+        # 1. 현재 로드되는 프롬프트
+        current_prompt = load_prompt_template()
+        
+        # 2. 파일 존재 여부
+        file_path = "prompts/prompt_hotel_policy.txt"
+        file_exists = os.path.exists(file_path)
+        
+        # 3. DEFAULT와 비교
+        is_default = current_prompt.strip() == DEFAULT_PROMPT_TEMPLATE.strip()
+        
+        # 4. 환경 정보
+        environment = os.getenv('ENVIRONMENT', 'development')
+        working_dir = os.getcwd()
+        
+        return {
+            "status": "success",
+            "environment": environment,
+            "working_directory": working_dir,
+            "prompt_file_exists": file_exists,
+            "prompt_file_path": file_path,
+            "is_using_default_template": is_default,
+            "prompt_length": len(current_prompt),
+            "prompt_preview": {
+                "first_100_chars": current_prompt[:100],
+                "last_100_chars": current_prompt[-100:],
+                "language": "English" if "hotel concierge" in current_prompt else "Korean",
+                "style": "Professional" if "professional" in current_prompt.lower() else "Casual"
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
 # 🚀 성능 모니터링 엔드포인트
 @app.get("/metrics", tags=["monitoring"])
 async def get_performance_metrics():

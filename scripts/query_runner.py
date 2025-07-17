@@ -19,6 +19,10 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 
+# 🎯 설정 가능한 Threshold (환경변수 지원)
+DEFAULT_SCORE_THRESHOLD = float(os.getenv("VECTOR_SIMILARITY_THRESHOLD", "0.65"))  # 기본값을 0.65로 조정
+print(f"🎯 벡터 유사도 임계값: {DEFAULT_SCORE_THRESHOLD}")
+
 # ✅ 상수 정의
 FALLBACK_MESSAGE = (
     "죄송합니다. 해당 내용에 대해선 지금 바로 정확한 안내가 어려워,\n"
@@ -34,10 +38,10 @@ DEFAULT_PROMPT_TEMPLATE = """
 고객 질문: {question}
 
 ※ 반드시 아래 조건을 지켜주세요:
-- 문서에 *직접적으로 명시된 내용*만을 바탕으로 답변하세요.
+
+- 문서에 *유사한 표현으로 명시된 내용*만을 바탕으로 답변하세요.
 - 문서에 정보가 없거나 불명확한 경우에는 "정확한 안내가 어렵습니다"라고만 답변하세요.
-- 추측하거나 일반적인 상식에 기반한 응답을 하지 마세요.
-- 특히 시간, 날짜, 금액과 같은 정보는 정확히 전달해야 하며, 문서에 없다면 절대 임의로 생성하지 마세요.
+- 일반적인 상식에 기반한 응답을 하지 마세요.
 """
 
 # ✅ 프롬프트 템플릿 로드
@@ -88,7 +92,7 @@ async def run_query(
     category: Optional[str] = None,
     section: Optional[str] = None,
     k: int = 3,
-    score_threshold: float = 0.7
+    score_threshold: Optional[float] = None
 ) -> Tuple[str, List[Tuple[dict, float]], bool]:
     """
     사용자 질문에 대한 답변을 생성합니다.
@@ -98,11 +102,17 @@ async def run_query(
         category (Optional[str]): 카테고리 필터
         section (Optional[str]): 섹션 필터
         k (int): 검색할 문서 수
-        score_threshold (float): 최소 유사도 점수
+        score_threshold (Optional[float]): 최소 유사도 점수 (None이면 환경변수 값 사용)
         
     Returns:
         Tuple[str, List[Tuple[dict, float]], bool]: (생성된 답변, 검색된 문서와 점수, fallback 여부)
     """
+    # 🎯 환경변수 기반 threshold 사용
+    if score_threshold is None:
+        score_threshold = DEFAULT_SCORE_THRESHOLD
+    
+    print(f"🔍 유사도 검색 임계값: {score_threshold}")
+    
     try:
         # 🚀 분산 캐시에서 응답 확인 (L1 + L2 캐시)
         try:
